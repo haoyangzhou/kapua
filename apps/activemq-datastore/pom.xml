@@ -20,9 +20,14 @@
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>hono-consumer</artifactId>
+    <artifactId>activemq-datastore</artifactId>
 
     <dependencies>
+        
+        <dependency>
+            <groupId>org.eclipse.kapua</groupId>
+            <artifactId>apps-api</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.eclipse.kapua</groupId>
             <artifactId>kapua-account-internal</artifactId>
@@ -37,7 +42,7 @@
         </dependency>
         <dependency>
             <groupId>org.eclipse.kapua</groupId>
-            <artifactId>kapua-connector-hono</artifactId>
+            <artifactId>kapua-connector-activemq</artifactId>
         </dependency>
         <dependency>
             <groupId>org.eclipse.kapua</groupId>
@@ -85,12 +90,6 @@
         <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-core</artifactId>
-            <version>3.5.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.hono</groupId>
-            <artifactId>hono-client</artifactId>
-            <version>0.6</version>
         </dependency>
 
         <dependency>
@@ -109,9 +108,47 @@
             <groupId>de.dentrassi.elasticsearch</groupId>
             <artifactId>log4j2-mock</artifactId>
         </dependency>
+        
+        <dependency>
+            <groupId>org.eclipse.paho</groupId>
+            <artifactId>org.eclipse.paho.client.mqttv3</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.kapua</groupId>
+            <artifactId>kapua-device-call-kura</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
     <build>
         <plugins>
+            <!-- 
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <addClasspath>true</addClasspath>
+                            <mainClass>org.eclipse.kapua.consumer.activemq.datastore.Consumer</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+            
+            <transformer 
+                implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                <manifestEntries>
+                    <Main-Class>io.vertx.core.Starter</Main-Class>
+                    <Main-Verticle>org.eclipse.kapua.consumer.activemq.datastore.Consumer</Main-Verticle>
+                </manifestEntries>
+            </transformer>
+             -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
@@ -139,8 +176,7 @@
                                 <transformer
                                     implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <manifestEntries>
-                                        <Main-Class>io.vertx.core.Starter</Main-Class>
-                                        <Main-Verticle>org.eclipse.kapua.consumer.hono.HonoConsumer</Main-Verticle>
+                                        <Main-Class>org.eclipse.kapua.consumer.activemq.datastore.Consumer</Main-Class>
                                     </manifestEntries>
                                 </transformer>
                             </transformers>

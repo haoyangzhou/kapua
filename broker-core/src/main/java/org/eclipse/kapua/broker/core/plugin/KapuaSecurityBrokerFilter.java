@@ -135,6 +135,7 @@ public class KapuaSecurityBrokerFilter extends BrokerFilter {
 
     protected static final Map<String, String> CONNECTION_MAP = new ConcurrentHashMap<>();
     private static final String CONNECTOR_NAME_VM = String.format("vm://%s", BrokerSetting.getInstance().getString(BrokerSettingKey.BROKER_NAME));
+    private static final String CONNECTOR_NAME_AMQP = "amqp";//TODO move to configuration
     private Authenticator authenticator;
 
     private AuthenticationService authenticationService = KapuaLocator.getInstance().getService(AuthenticationService.class);
@@ -336,7 +337,8 @@ public class KapuaSecurityBrokerFilter extends BrokerFilter {
      */
     private boolean isPassThroughConnection(ConnectionContext context) {
         if (context != null) {
-            if (context.getConnector() == null || CONNECTOR_NAME_VM.equals(((TransportConnector) context.getConnector()).getName())) {
+            String connectorName = context.getConnector() != null ? ((TransportConnector) context.getConnector()).getName() : null;
+            if (context.getConnector() == null || CONNECTOR_NAME_VM.equals(connectorName) || CONNECTOR_NAME_AMQP.equals(connectorName)) {
                 return true;
             }
 

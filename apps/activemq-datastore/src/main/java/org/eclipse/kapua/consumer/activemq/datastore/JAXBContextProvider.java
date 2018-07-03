@@ -9,7 +9,7 @@
  * Contributors:
  *     Eurotech - initial API and implementation
  *******************************************************************************/
-package org.eclipse.kapua.consumer.hono;
+package org.eclipse.kapua.consumer.activemq.datastore;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
@@ -20,7 +20,6 @@ import org.eclipse.kapua.commons.service.event.store.api.EventStoreRecordCreator
 import org.eclipse.kapua.commons.service.event.store.api.EventStoreRecordListResult;
 import org.eclipse.kapua.commons.service.event.store.api.EventStoreRecordQuery;
 import org.eclipse.kapua.commons.service.event.store.api.EventStoreXmlRegistry;
-import org.eclipse.kapua.commons.util.xml.JAXBContextProvider;
 import org.eclipse.kapua.event.ServiceEvent;
 import org.eclipse.kapua.model.config.metatype.KapuaTad;
 import org.eclipse.kapua.model.config.metatype.KapuaTdesignate;
@@ -34,9 +33,9 @@ import org.eclipse.persistence.jaxb.JAXBContextFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HonoConsumerJAXBContextProvider implements JAXBContextProvider {
+public class JAXBContextProvider implements org.eclipse.kapua.commons.util.xml.JAXBContextProvider {
 
-    private static Logger logger = LoggerFactory.getLogger(HonoConsumerJAXBContextProvider.class);
+    private static Logger logger = LoggerFactory.getLogger(JAXBContextProvider.class);
 
     private JAXBContext context;
 

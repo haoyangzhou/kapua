@@ -18,6 +18,7 @@ import org.eclipse.kapua.processor.Processor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 
@@ -28,13 +29,14 @@ import io.vertx.core.Vertx;
  * @param <M> Converter message type (optional)
  * @param <P> Processor message type
  */
-public abstract class AbstractConnector<M, P> {
+public abstract class AbstractConnector<M, P> extends AbstractVerticle {
 
     protected final static Logger logger = LoggerFactory.getLogger(AbstractConnector.class);
 
     protected Vertx vertx;
     protected Converter<M, P> converter;
     protected Processor<P> processor;
+    private boolean connected;
 
     /**
      * Default protected constructor
@@ -79,7 +81,16 @@ public abstract class AbstractConnector<M, P> {
      */
     protected abstract MessageContext<M> convert(MessageContext<?> message) throws KapuaConverterException;
 
-    public void start(Future<Void> startFuture) throws KapuaConnectorException {
+    public boolean isConnected() {
+        return connected;
+    }
+
+    protected void setConnected(boolean connected) {
+        this.connected = connected;
+    }
+
+    @Override
+    public void start(Future<Void> startFuture) throws Exception {
         logger.debug("Starting connector...");
         Future<Void> composerFuture = Future.future();
         composerFuture.compose(mapper -> {
@@ -113,7 +124,8 @@ public abstract class AbstractConnector<M, P> {
         processor.process(convertedMessage);
     }
 
-    public void stop(Future<Void> stopFuture) throws KapuaConnectorException {
+    @Override
+    public void stop(Future<Void> stopFuture) throws Exception {
         logger.debug("Stopping connector...");
         Future<Void> composerFuture = Future.future();
         composerFuture.compose(mapper -> {
