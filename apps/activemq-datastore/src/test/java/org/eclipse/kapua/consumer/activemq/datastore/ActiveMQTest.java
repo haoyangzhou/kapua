@@ -36,7 +36,7 @@ public class ActiveMQTest {
     private final static String TOPIC_PUB = "kapua-sys/" + CLIENT_ID + "/data/topic1";
 
     @Test
-    public void test() throws MqttException {
+    public void test() throws MqttException, InterruptedException {
         MqttClient client = new MqttClient(SERVER_URL, CLIENT_ID);
         MqttConnectOptions options = new MqttConnectOptions();
         options.setUserName("kapua-sys");
@@ -44,7 +44,10 @@ public class ActiveMQTest {
         client.setCallback(new MqttCallback());
         client.connect(options);
         client.subscribe(TOPIC_SUB);
-        client.publish(TOPIC_PUB, getMqttMessage());
+        for(int i=0; i<100; i++) {
+            client.publish(TOPIC_PUB, getMqttMessage());
+            Thread.sleep(1000);
+        }
     }
 
     private MqttMessage getMqttMessage() {

@@ -39,8 +39,8 @@ import io.vertx.ext.healthchecks.Status;
 public class Consumer extends AbstractApplication {
 
     protected final static Logger logger = LoggerFactory.getLogger(Consumer.class);
-    private final static String HEALTH_NAME = "Consumer-ActiveMQ";
-    private final static String HEALTH_PATH = "/health/consumer/activemq";
+    private final static String HEALTH_NAME = "Consumer-Datastore-ActiveMQ";
+    private final static String HEALTH_PATH = "/health/consumer/activemq/datastore";
 
     public static void main(String args[]) throws Exception {
         Consumer consumer = new Consumer();
@@ -69,14 +69,14 @@ public class Consumer extends AbstractApplication {
         //disable Vertx BlockedThreadChecker log
         java.util.logging.Logger.getLogger("io.vertx.core.impl.BlockedThreadChecker").setLevel(Level.OFF);
         XmlUtil.setContextProvider(new JAXBContextProvider());
-        logger.info("Instantiating HonoConsumer...");
-        logger.info("Instantiating HonoConsumer... initializing KuraPayloadProtoConverter");
+        logger.info("Instantiating Datastore Consumer...");
+        logger.info("Instantiating Datastore Consumer... initializing KuraPayloadProtoConverter");
         converter = new KuraPayloadProtoConverter();
-        logger.info("Instantiating HonoConsumer... initializing DataStoreProcessor");
+        logger.info("Instantiating Datastore Consumer... initializing DataStoreProcessor");
         processor = new DatastoreProcessor();
-        logger.info("Instantiating HonoConsumer... instantiating AmqpHonoConnector");
+        logger.info("Instantiating Datastore Consumer... instantiating AmqpActiveMQConnector");
         connector = new AmqpActiveMQConnector(applicationContext.getVertx(), converter, processor);
-        logger.info("Instantiating HonoConsumer... DONE");
+        logger.info("Instantiating Datastore Consumer... DONE");
         applicationContext.getVertx().deployVerticle(connector, ar -> {
             if (ar.succeeded()) {
                 startFuture.complete(ar.result());

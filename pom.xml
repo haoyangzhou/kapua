@@ -474,6 +474,11 @@
             </dependency>
             <dependency>
                 <groupId>org.eclipse.kapua</groupId>
+                <artifactId>kapua-broker-plugin</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.eclipse.kapua</groupId>
                 <artifactId>kapua-broker-core</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -1344,7 +1349,6 @@
         <module>message</module>
         <module>transport</module>
         <module>translator</module>
-        <module>broker-core</module>
         <module>connector</module>
         <module>converter</module>
         <module>processor</module>
