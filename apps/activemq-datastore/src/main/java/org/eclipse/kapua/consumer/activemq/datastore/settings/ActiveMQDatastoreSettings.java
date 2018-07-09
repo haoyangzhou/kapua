@@ -9,22 +9,22 @@
  * Contributors:
  *     Eurotech - initial API and implementation
  *******************************************************************************/
-package org.eclipse.kapua.broker.client.amqp.settings;
+package org.eclipse.kapua.consumer.activemq.datastore.settings;
 
 import org.eclipse.kapua.commons.setting.AbstractKapuaSetting;
 
 /**
- * AmqpClientSettings implementation
+ * ActiveMQDatastoreSettings implementation
  * 
  * @since 1.0
  */
-public class AmqpClientSettings extends AbstractKapuaSetting<AmqpClientSettingsKey> {
+public class ActiveMQDatastoreSettings extends AbstractKapuaSetting<ActiveMQDatastoreSettingsKey> {
 
-    private static final String CONNECTOR_CONFIG_RESOURCE = "kapua-client-amqp-setting.properties";
+    private static final String CONNECTOR_CONFIG_RESOURCE = "kapua-connector-activemq-datastore-setting.properties";
 
-    private static final AmqpClientSettings INSTANCE = new AmqpClientSettings();
+    private static final ActiveMQDatastoreSettings INSTANCE = new ActiveMQDatastoreSettings();
 
-    private AmqpClientSettings() {
+    private ActiveMQDatastoreSettings() {
         super(CONNECTOR_CONFIG_RESOURCE);
     }
 
@@ -33,7 +33,7 @@ public class AmqpClientSettings extends AbstractKapuaSetting<AmqpClientSettingsK
      * 
      * @return
      */
-    public static AmqpClientSettings getInstance() {
+    public static ActiveMQDatastoreSettings getInstance() {
         return INSTANCE;
     }
 }

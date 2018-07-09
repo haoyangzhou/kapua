@@ -26,6 +26,7 @@
     <modules>
         <module>api</module>
         <module>activemq-datastore</module>
+        <module>activemq-lifecycle</module>
     </modules>
 
 </project>

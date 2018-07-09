@@ -9,7 +9,7 @@
  * Contributors:
  *     Eurotech - initial API and implementation
  *******************************************************************************/
-package org.eclipse.kapua.consumer.activemq.datastore;
+package org.eclipse.kapua.consumer.activemq.lifecycle;
 
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -24,11 +24,11 @@ import org.eclipse.kapua.commons.setting.system.SystemSetting;
 import org.eclipse.kapua.commons.setting.system.SystemSettingKey;
 import org.eclipse.kapua.commons.util.xml.XmlUtil;
 import org.eclipse.kapua.connector.activemq.AmqpActiveMQConnector;
-import org.eclipse.kapua.consumer.activemq.datastore.settings.ActiveMQDatastoreSettings;
-import org.eclipse.kapua.consumer.activemq.datastore.settings.ActiveMQDatastoreSettingsKey;
+import org.eclipse.kapua.consumer.activemq.lifecycle.settings.ActiveMQLifecycleSettings;
+import org.eclipse.kapua.consumer.activemq.lifecycle.settings.ActiveMQLifecycleSettingsKey;
 import org.eclipse.kapua.converter.kura.KuraPayloadProtoConverter;
-import org.eclipse.kapua.processor.datastore.DatastoreProcessor;
 import org.eclipse.kapua.processor.error.amqp.activemq.ErrorProcessor;
+import org.eclipse.kapua.processor.lifecycle.LifecycleProcessor;
 import org.eclipse.kapua.service.liquibase.KapuaLiquibaseClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,14 +38,14 @@ import com.google.common.base.MoreObjects;
 import io.vertx.ext.healthchecks.Status;
 
 /**
- * ActiveMQ AMQP consumer with Kura payload converter and Kapua data store ingestion
+ * ActiveMQ AMQP consumer with Kura payload converter and Kapua lifecycle manager
  *
  */
 public class Consumer extends AbstractApplication {
 
     protected final static Logger logger = LoggerFactory.getLogger(Consumer.class);
-    private final static String HEALTH_NAME = "Consumer-Datastore-ActiveMQ";
-    private final static String HEALTH_PATH = "/health/consumer/activemq/datastore";
+    private final static String HEALTH_NAME = "Consumer-Lifecycle-ActiveMQ";
+    private final static String HEALTH_PATH = "/health/consumer/activemq/lifecycle";
 
     public static void main(String args[]) throws Exception {
         Consumer consumer = new Consumer();
@@ -56,7 +56,7 @@ public class Consumer extends AbstractApplication {
     private ClientOptions errorOptions;
     private AmqpActiveMQConnector connector;
     private KuraPayloadProtoConverter converter;
-    private DatastoreProcessor processor;
+    private LifecycleProcessor processor;
     private ErrorProcessor errorProcessor;
 
     protected Consumer() {
@@ -71,26 +71,26 @@ public class Consumer extends AbstractApplication {
         }
         //init options
         connectorOptions = new ClientOptions(
-                ActiveMQDatastoreSettings.getInstance().getString(ActiveMQDatastoreSettingsKey.CONNECTION_HOST),
-                ActiveMQDatastoreSettings.getInstance().getInt(ActiveMQDatastoreSettingsKey.CONNECTION_PORT),
-                ActiveMQDatastoreSettings.getInstance().getString(ActiveMQDatastoreSettingsKey.CONNECTION_USERNAME),
-                ActiveMQDatastoreSettings.getInstance().getString(ActiveMQDatastoreSettingsKey.CONNECTION_PASSWORD));
-        connectorOptions.put(AmqpClientOptions.CLIENT_ID, ActiveMQDatastoreSettings.getInstance().getString(ActiveMQDatastoreSettingsKey.TELEMETRY_CLIENT_ID));
-        connectorOptions.put(AmqpClientOptions.DESTINATION, ActiveMQDatastoreSettings.getInstance().getString(ActiveMQDatastoreSettingsKey.TELEMETRY_DESTINATION));
-        connectorOptions.put(AmqpClientOptions.CONNECT_TIMEOUT, ActiveMQDatastoreSettings.getInstance().getInt(ActiveMQDatastoreSettingsKey.CONNECT_TIMEOUT));
-        connectorOptions.put(AmqpClientOptions.MAXIMUM_RECONNECTION_ATTEMPTS, ActiveMQDatastoreSettings.getInstance().getInt(ActiveMQDatastoreSettingsKey.MAX_RECONNECTION_ATTEMPTS));
-        connectorOptions.put(AmqpClientOptions.IDLE_TIMEOUT, ActiveMQDatastoreSettings.getInstance().getInt(ActiveMQDatastoreSettingsKey.IDLE_TIMEOUT));
+                ActiveMQLifecycleSettings.getInstance().getString(ActiveMQLifecycleSettingsKey.CONNECTION_HOST),
+                ActiveMQLifecycleSettings.getInstance().getInt(ActiveMQLifecycleSettingsKey.CONNECTION_PORT),
+                ActiveMQLifecycleSettings.getInstance().getString(ActiveMQLifecycleSettingsKey.CONNECTION_USERNAME),
+                ActiveMQLifecycleSettings.getInstance().getString(ActiveMQLifecycleSettingsKey.CONNECTION_PASSWORD));
+        connectorOptions.put(AmqpClientOptions.CLIENT_ID, ActiveMQLifecycleSettings.getInstance().getString(ActiveMQLifecycleSettingsKey.TELEMETRY_CLIENT_ID));
+        connectorOptions.put(AmqpClientOptions.DESTINATION, ActiveMQLifecycleSettings.getInstance().getString(ActiveMQLifecycleSettingsKey.TELEMETRY_DESTINATION));
+        connectorOptions.put(AmqpClientOptions.CONNECT_TIMEOUT, ActiveMQLifecycleSettings.getInstance().getInt(ActiveMQLifecycleSettingsKey.CONNECT_TIMEOUT));
+        connectorOptions.put(AmqpClientOptions.MAXIMUM_RECONNECTION_ATTEMPTS, ActiveMQLifecycleSettings.getInstance().getInt(ActiveMQLifecycleSettingsKey.MAX_RECONNECTION_ATTEMPTS));
+        connectorOptions.put(AmqpClientOptions.IDLE_TIMEOUT, ActiveMQLifecycleSettings.getInstance().getInt(ActiveMQLifecycleSettingsKey.IDLE_TIMEOUT));
         errorOptions = new ClientOptions();
         errorOptions = new ClientOptions(
-                ActiveMQDatastoreSettings.getInstance().getString(ActiveMQDatastoreSettingsKey.CONNECTION_HOST),
-                ActiveMQDatastoreSettings.getInstance().getInt(ActiveMQDatastoreSettingsKey.CONNECTION_PORT),
-                ActiveMQDatastoreSettings.getInstance().getString(ActiveMQDatastoreSettingsKey.CONNECTION_USERNAME),
-                ActiveMQDatastoreSettings.getInstance().getString(ActiveMQDatastoreSettingsKey.CONNECTION_PASSWORD));
-        errorOptions.put(AmqpClientOptions.CLIENT_ID, ActiveMQDatastoreSettings.getInstance().getString(ActiveMQDatastoreSettingsKey.ERROR_CLIENT_ID));
-        errorOptions.put(AmqpClientOptions.DESTINATION, ActiveMQDatastoreSettings.getInstance().getString(ActiveMQDatastoreSettingsKey.ERROR_DESTINATION));
-        errorOptions.put(AmqpClientOptions.CONNECT_TIMEOUT, ActiveMQDatastoreSettings.getInstance().getInt(ActiveMQDatastoreSettingsKey.CONNECT_TIMEOUT));
-        errorOptions.put(AmqpClientOptions.MAXIMUM_RECONNECTION_ATTEMPTS, ActiveMQDatastoreSettings.getInstance().getInt(ActiveMQDatastoreSettingsKey.MAX_RECONNECTION_ATTEMPTS));
-        errorOptions.put(AmqpClientOptions.IDLE_TIMEOUT, ActiveMQDatastoreSettings.getInstance().getInt(ActiveMQDatastoreSettingsKey.IDLE_TIMEOUT));
+                ActiveMQLifecycleSettings.getInstance().getString(ActiveMQLifecycleSettingsKey.CONNECTION_HOST),
+                ActiveMQLifecycleSettings.getInstance().getInt(ActiveMQLifecycleSettingsKey.CONNECTION_PORT),
+                ActiveMQLifecycleSettings.getInstance().getString(ActiveMQLifecycleSettingsKey.CONNECTION_USERNAME),
+                ActiveMQLifecycleSettings.getInstance().getString(ActiveMQLifecycleSettingsKey.CONNECTION_PASSWORD));
+        errorOptions.put(AmqpClientOptions.CLIENT_ID, ActiveMQLifecycleSettings.getInstance().getString(ActiveMQLifecycleSettingsKey.ERROR_CLIENT_ID));
+        errorOptions.put(AmqpClientOptions.DESTINATION, ActiveMQLifecycleSettings.getInstance().getString(ActiveMQLifecycleSettingsKey.ERROR_DESTINATION));
+        errorOptions.put(AmqpClientOptions.CONNECT_TIMEOUT, ActiveMQLifecycleSettings.getInstance().getInt(ActiveMQLifecycleSettingsKey.CONNECT_TIMEOUT));
+        errorOptions.put(AmqpClientOptions.MAXIMUM_RECONNECTION_ATTEMPTS, ActiveMQLifecycleSettings.getInstance().getInt(ActiveMQLifecycleSettingsKey.MAX_RECONNECTION_ATTEMPTS));
+        errorOptions.put(AmqpClientOptions.IDLE_TIMEOUT, ActiveMQLifecycleSettings.getInstance().getInt(ActiveMQLifecycleSettingsKey.IDLE_TIMEOUT));
     }
 
     @Override
@@ -99,16 +99,16 @@ public class Consumer extends AbstractApplication {
         //disable Vertx BlockedThreadChecker log
         java.util.logging.Logger.getLogger("io.vertx.core.impl.BlockedThreadChecker").setLevel(Level.OFF);
         XmlUtil.setContextProvider(new JAXBContextProvider());
-        logger.info("Instantiating Datastore Consumer...");
-        logger.info("Instantiating Datastore Consumer... initializing KuraPayloadProtoConverter");
+        logger.info("Instantiating Lifecycle Consumer...");
+        logger.info("Instantiating Lifecycle Consumer... initializing KuraPayloadProtoConverter");
         converter = new KuraPayloadProtoConverter();
-        logger.info("Instantiating Datastore Consumer... initializing DataStoreProcessor");
-        processor = new DatastoreProcessor();
-        logger.info("Instantiating Datastore Consumer... initializing ErrorProcessor");
+        logger.info("Instantiating Lifecycle Consumer... initializing LifecycleProcessor");
+        processor = new LifecycleProcessor();
+        logger.info("Instantiating Lifecycle Consumer... initializing ErrorProcessor");
         errorProcessor = new ErrorProcessor(applicationContext.getVertx(), errorOptions);
-        logger.info("Instantiating Datastore Consumer... instantiating AmqpActiveMQConnector");
+        logger.info("Instantiating Lifecycle Consumer... instantiating AmqpActiveMQConnector");
         connector = new AmqpActiveMQConnector(applicationContext.getVertx(), connectorOptions, converter, processor, errorProcessor);
-        logger.info("Instantiating Datastore Consumer... DONE");
+        logger.info("Instantiating Lifecycle Consumer... DONE");
         applicationContext.getVertx().deployVerticle(connector, ar -> {
             if (ar.succeeded()) {
                 startFuture.complete(ar.result());

@@ -11,11 +11,10 @@
  *******************************************************************************/
 package org.eclipse.kapua.broker.client.amqp;
 
-import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.eclipse.kapua.broker.client.amqp.settings.AmqpClientSettings;
-import org.eclipse.kapua.broker.client.amqp.settings.AmqpClientSettingsKey;
+import org.eclipse.kapua.broker.client.amqp.ClientOptions.AmqpClientOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,39 +30,20 @@ public abstract class AbstractAmqpClient {
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractAmqpClient.class);
 
-    protected String destination = AmqpClientSettings.getInstance().getString(AmqpClientSettingsKey.DESTINATION);
-    protected String brokerHost = AmqpClientSettings.getInstance().getString(AmqpClientSettingsKey.BROKER_HOST);
-    protected int brokerPort = AmqpClientSettings.getInstance().getInt(AmqpClientSettingsKey.BROKER_PORT);
-    protected String brokerUsername = AmqpClientSettings.getInstance().getString(AmqpClientSettingsKey.BROKER_USERNAME);
-    protected String brokerPassword = AmqpClientSettings.getInstance().getString(AmqpClientSettingsKey.BROKER_PASSWORD);
-
     protected boolean connected;
     protected AtomicInteger reconnectionFaultCount = new AtomicInteger();
     protected Long reconnectTaskId;
-    protected int maxReconnectionAttempts;
-    protected int exitCode = -1;
 
+    protected ClientOptions clientOptions;
     protected Vertx vertx;
     protected Context context;
     protected ProtonClient client;
     protected ProtonConnection connection;
 
-    protected static final String KEY_MAX_RECONNECTION_ATTEMPTS = "maxReconnectionAttempts";
-    protected static final String KEY_EXIT_CODE = "exitCode";
-
-    //TODO move this configuration parameters to global section
-    protected void setConfiguration(Map<String, Object> configuration) {
-        logger.info("Configuration");
-        Integer tmp = (Integer)configuration.get(KEY_MAX_RECONNECTION_ATTEMPTS);
-        maxReconnectionAttempts = tmp != null ? (int) tmp : -1;
-        logger.info("Maximum reconnection attemps {}", maxReconnectionAttempts);
-        tmp = (Integer)configuration.get(KEY_EXIT_CODE);
-        exitCode = tmp != null ? (int) tmp : -1;
-        logger.info("Exit code {}", exitCode);
-    }
-
-    protected AbstractAmqpClient(Vertx vertx) {
+    protected AbstractAmqpClient(Vertx vertx, ClientOptions clientOptions) {
         this.vertx = vertx;
+        this.clientOptions = clientOptions;
+        this.context = vertx.getOrCreateContext();
     }
 
     public boolean isConnected() {
@@ -86,6 +66,10 @@ public abstract class AbstractAmqpClient {
     }
 
     public void connect(Future<Void> startFuture) {
+        String brokerHost = clientOptions.getString(AmqpClientOptions.BROKER_HOST);
+        Integer brokerPort = clientOptions.getInt(AmqpClientOptions.BROKER_PORT, null);
+        Objects.requireNonNull(brokerHost);
+        Objects.requireNonNull(brokerPort);
         logger.info("Connecting to broker {}:{}...", brokerHost, brokerPort);
         // make sure connection is already closed
         if (connection != null && !connection.isDisconnected()) {
@@ -97,16 +81,29 @@ public abstract class AbstractAmqpClient {
 
         client = ProtonClient.create(vertx);
         ProtonClientOptions options = new ProtonClientOptions();
-        //TODO get parameters from configuration
-        options.setConnectTimeout(60);
-        options.setIdleTimeout(60);
-        options.setHeartbeat(15000);
+        Integer connectTimeout = clientOptions.getInt(AmqpClientOptions.CONNECT_TIMEOUT, null);
+        Integer idleTimeout = clientOptions.getInt(AmqpClientOptions.IDLE_TIMEOUT, null);
+        Integer waitBetweenReconnect = clientOptions.getInt(AmqpClientOptions.WAIT_BETWEEN_RECONNECT, null);
+
+        if (connectTimeout != null) {
+            options.setConnectTimeout(connectTimeout);
+        }
+        if (idleTimeout != null) {
+            //check if zero disables the timeout and heartbeat
+            options.setIdleTimeout(idleTimeout);//no activity for t>idleTimeout will close the connection (in seconds)
+            options.setHeartbeat(idleTimeout * 1000 / 2);//no activity for t>2*heartbeat will close connection (in milliseconds)
+        }
+        options.setReconnectAttempts(1);//the reconnect attempts are managed externally
+        if (waitBetweenReconnect != null) {
+            options.setReconnectInterval(waitBetweenReconnect);
+        }
+        //TODO do we need to set some other parameter?
         client.connect(
                 options,
                 brokerHost,
                 brokerPort,
-                brokerUsername,
-                brokerPassword,
+                clientOptions.getString(AmqpClientOptions.USERNAME),
+                clientOptions.getString(AmqpClientOptions.PASSWORD),
                 asynchResult ->{
                     if (asynchResult.succeeded()) {
                         logger.info("Connecting to broker {}:{}... Creating receiver... DONE", brokerHost, brokerPort);
@@ -165,9 +162,10 @@ public abstract class AbstractAmqpClient {
                                 reconnectionFaultCount.set(0);
                             } else {
                                 logger.info("Establish connection retry {}... FAILURE", reconnectionFaultCount.get(), result.cause());
-                                if (reconnectionFaultCount.incrementAndGet() > maxReconnectionAttempts && maxReconnectionAttempts>-1) {
+                                if (reconnectionFaultCount.incrementAndGet() > clientOptions.getInt(AmqpClientOptions.MAXIMUM_RECONNECTION_ATTEMPTS, -1) && 
+                                        clientOptions.getInt(AmqpClientOptions.MAXIMUM_RECONNECTION_ATTEMPTS, -1)>-1) {
                                     logger.error("Maximum reconnection attempts reached. Exiting...");
-                                    System.exit(exitCode);
+                                    System.exit(clientOptions.getInt(AmqpClientOptions.EXIT_CODE, -1));
                                 };
                                 //schedule a new task
                                 notifyConnectionLost();

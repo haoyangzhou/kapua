@@ -18,6 +18,7 @@ package org.eclipse.kapua.processor.error.amqp.activemq;
 //import org.apache.qpid.proton.message.impl.MessageImpl;
 //import org.eclipse.kapua.KapuaErrorCodes;
 import org.eclipse.kapua.broker.client.amqp.AmqpSender;
+import org.eclipse.kapua.broker.client.amqp.ClientOptions;
 import org.eclipse.kapua.connector.MessageContext;
 import org.eclipse.kapua.message.transport.TransportMessage;
 import org.eclipse.kapua.processor.KapuaProcessorException;
@@ -34,8 +35,8 @@ public class ErrorProcessor implements Processor<TransportMessage> {
 
     private AmqpSender sender;
 
-    public ErrorProcessor(Vertx vertx) {
-        sender = new AmqpSender(vertx);
+    public ErrorProcessor(Vertx vertx, ClientOptions clientOptions) {
+        sender = new AmqpSender(vertx, clientOptions);
     }
 
     @Override

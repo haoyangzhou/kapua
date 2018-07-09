@@ -11,7 +11,7 @@
  *******************************************************************************/
 package org.eclipse.kapua.broker.client.hono;
 
-import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
@@ -21,8 +21,7 @@ import org.eclipse.hono.client.impl.HonoClientImpl;
 import org.eclipse.hono.config.ClientConfigProperties;
 import org.eclipse.hono.util.MessageTap;
 import org.eclipse.hono.util.TimeUntilDisconnectNotification;
-import org.eclipse.kapua.broker.client.hono.settings.HonoClientSettings;
-import org.eclipse.kapua.broker.client.hono.settings.HonoClientSettingsKey;
+import org.eclipse.kapua.broker.client.hono.ClientOptions.HonoClientOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,22 +34,10 @@ public class HonoClient {
 
     private static final Logger logger = LoggerFactory.getLogger(HonoClient.class);
 
-    private String username = HonoClientSettings.getInstance().getString(HonoClientSettingsKey.BROKER_USERNAME);
-    private String password = HonoClientSettings.getInstance().getString(HonoClientSettingsKey.BROKER_PASSWORD);
-    private String host = HonoClientSettings.getInstance().getString(HonoClientSettingsKey.BROKER_HOST);
-    private int port = HonoClientSettings.getInstance().getInt(HonoClientSettingsKey.BROKER_PORT);
-    private int maxReconnectAttempts = HonoClientSettings.getInstance().getInt(HonoClientSettingsKey.PROTON_MAX_RECONNECT_ATTEMPTS);
-    private long waitBetweenReconnect = HonoClientSettings.getInstance().getInt(HonoClientSettingsKey.PROTON_WAIT_BETWEEN_RECONNECT);
-    private int connectTimeout = HonoClientSettings.getInstance().getInt(HonoClientSettingsKey.PROTON_CONNECT_TIMEOUT);
-    private int idleTimeout = HonoClientSettings.getInstance().getInt(HonoClientSettingsKey.PROTON_IDLE_TIMEOUT);
-    private List<String> tenantId = HonoClientSettings.getInstance().getList(String.class, HonoClientSettingsKey.TENANT_ID);
-    private String trustStoreFile = HonoClientSettings.getInstance().getString(HonoClientSettingsKey.TRUSTSTORE_FILE);
-
+    protected ClientOptions clientOptions;
     protected boolean connected;
     protected AtomicInteger reconnectionFaultCount = new AtomicInteger();
     protected Long reconnectTaskId;
-    protected int maxReconnectionAttempts;
-    protected int exitCode = -1;
 
     protected Vertx vertx;
     private org.eclipse.hono.client.HonoClient honoClient;
@@ -62,6 +49,10 @@ public class HonoClient {
     }
 
     public void connect(final Future<Void> connectFuture) {
+        String host = clientOptions.getString(HonoClientOptions.HOST);
+        Integer port = clientOptions.getInt(HonoClientOptions.PORT, null);
+        Objects.requireNonNull(host);
+        Objects.requireNonNull(port);
         logger.info("Hono client - Connecting to {}:{}", host, port);
         if (honoClient != null) {
             //try to disconnect the client
@@ -76,7 +67,7 @@ public class HonoClient {
             });
             disconnect(tmpFuture);
         }
-        honoClient = new HonoClientImpl(vertx, getClientConfigProperties());
+        honoClient = new HonoClientImpl(vertx, getClientConfigProperties(host, port));
         //TODO handle subscription to multiple tenants ids
         honoClient.connect(
                 getProtonClientOptions(),
@@ -84,7 +75,8 @@ public class HonoClient {
                 ).compose(connectedClient -> {
                 final Consumer<Message> telemetryHandler = MessageTap.getConsumer(
                         messageConsumer, this::handleCommandReadinessNotification);
-                Future<MessageConsumer> futureConsumer = connectedClient.createTelemetryConsumer(tenantId.get(0),
+                Future<MessageConsumer> futureConsumer = connectedClient.createTelemetryConsumer(
+                        clientOptions.getString(HonoClientOptions.TENANT_ID),
                         telemetryHandler, closeHook -> {
                             String errorMesssage = "Hono client - remotely detached consumer link";
                             logger.error(errorMesssage);
@@ -140,9 +132,10 @@ public class HonoClient {
                                 reconnectionFaultCount.set(0);
                             } else {
                                 logger.info("Establish connection retry {}... FAILURE", reconnectionFaultCount.get(), result.cause());
-                                if (reconnectionFaultCount.incrementAndGet() > maxReconnectionAttempts && maxReconnectionAttempts>-1) {
+                                if (reconnectionFaultCount.incrementAndGet() > clientOptions.getInt(HonoClientOptions.MAXIMUM_RECONNECTION_ATTEMPTS, -1) 
+                                        && clientOptions.getInt(HonoClientOptions.MAXIMUM_RECONNECTION_ATTEMPTS, -1)>-1) {
                                     logger.error("Maximum reconnection attempts reached. Exiting...");
-                                    System.exit(exitCode);
+                                    System.exit(clientOptions.getInt(HonoClientOptions.MAXIMUM_RECONNECTION_ATTEMPTS, -1));
                                 };
                                 //schedule a new task
                                 notifyConnectionLost();
@@ -168,25 +161,35 @@ public class HonoClient {
         return (1 + reconnectionFaultCount.get()) * 3000;
     }
 
-    protected ClientConfigProperties getClientConfigProperties() {
+    protected ClientConfigProperties getClientConfigProperties(String host, int port) {
         ClientConfigProperties props = new ClientConfigProperties();
         props.setHost(host);
         props.setPort(port);
-        props.setUsername(username);
-        props.setPassword(password);
-        props.setTrustStorePath(trustStoreFile);
+        props.setUsername(clientOptions.getString(HonoClientOptions.USERNAME));
+        props.setPassword(clientOptions.getString(HonoClientOptions.PASSWORD));
+        props.setTrustStorePath(clientOptions.getString(HonoClientOptions.TRUSTSTORE_FILE));
         props.setHostnameVerificationRequired(false);
         return props;
     }
 
     protected ProtonClientOptions getProtonClientOptions() {
         ProtonClientOptions opts = new ProtonClientOptions();
-        opts.setConnectTimeout(connectTimeout);
-        //check if zero disables the timeout and heartbeat
-        opts.setIdleTimeout(idleTimeout);//no activity for t>idleTimeout will close the connection (in seconds)
-        opts.setHeartbeat(idleTimeout * 1000 / 2);//no activity for t>2*heartbeat will close connection (in milliseconds)
-        opts.setReconnectAttempts(maxReconnectAttempts);
-        opts.setReconnectInterval(waitBetweenReconnect);
+        Integer connectTimeout = clientOptions.getInt(HonoClientOptions.CONNECT_TIMEOUT, null);
+        Integer idleTimeout = clientOptions.getInt(HonoClientOptions.IDLE_TIMEOUT, null);
+        Integer waitBetweenReconnect = clientOptions.getInt(HonoClientOptions.WAIT_BETWEEN_RECONNECT, null);
+
+        if (connectTimeout != null) {
+            opts.setConnectTimeout(connectTimeout);
+        }
+        if (idleTimeout != null) {
+            //check if zero disables the timeout and heartbeat
+            opts.setIdleTimeout(idleTimeout);//no activity for t>idleTimeout will close the connection (in seconds)
+            opts.setHeartbeat(idleTimeout * 1000 / 2);//no activity for t>2*heartbeat will close connection (in milliseconds)
+        }
+        opts.setReconnectAttempts(1);//the reconnect attempts are managed externally
+        if (waitBetweenReconnect != null) {
+            opts.setReconnectInterval(waitBetweenReconnect);
+        }
         //TODO do we need to set some other parameter?
         return opts;
     }

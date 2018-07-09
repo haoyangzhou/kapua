@@ -11,6 +11,7 @@
  *******************************************************************************/
 package org.eclipse.kapua.broker.client.amqp;
 
+import org.eclipse.kapua.broker.client.amqp.ClientOptions.AmqpClientOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,13 +25,14 @@ public class AmqpConsumer extends AbstractAmqpClient {
     private static final Logger logger = LoggerFactory.getLogger(AmqpConsumer.class);
     private ProtonMessageHandler messageHandler;
 
-    public AmqpConsumer(Vertx vertx, ProtonMessageHandler messageHandler) {
-        super(vertx);
+    public AmqpConsumer(Vertx vertx, ClientOptions clientOptions, ProtonMessageHandler messageHandler) {
+        super(vertx, clientOptions);
         this.messageHandler = messageHandler;
     }
 
     protected void registerAction(ProtonConnection connection, Future<Object> future) {
         try {
+            String destination = clientOptions.getString(AmqpClientOptions.DESTINATION);
             logger.info("Register consumer for destination {}...", destination);
 
             if (connection.isDisconnected()) {

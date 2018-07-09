@@ -9,22 +9,22 @@
  * Contributors:
  *     Eurotech - initial API and implementation
  *******************************************************************************/
-package org.eclipse.kapua.broker.client.hono.settings;
+package org.eclipse.kapua.consumer.activemq.lifecycle.settings;
 
 import org.eclipse.kapua.commons.setting.AbstractKapuaSetting;
 
 /**
- * AmqpClientSettings implementation
+ * ActiveMQDatastoreSettings implementation
  * 
  * @since 1.0
  */
-public class HonoClientSettings extends AbstractKapuaSetting<HonoClientSettingsKey> {
+public class ActiveMQLifecycleSettings extends AbstractKapuaSetting<ActiveMQLifecycleSettingsKey> {
 
-    private static final String CONNECTOR_CONFIG_RESOURCE = "kapua-client-hono-setting.properties";
+    private static final String CONNECTOR_CONFIG_RESOURCE = "kapua-connector-activemq-lifecycle-setting.properties";
 
-    private static final HonoClientSettings INSTANCE = new HonoClientSettings();
+    private static final ActiveMQLifecycleSettings INSTANCE = new ActiveMQLifecycleSettings();
 
-    private HonoClientSettings() {
+    private ActiveMQLifecycleSettings() {
         super(CONNECTOR_CONFIG_RESOURCE);
     }
 
@@ -33,7 +33,7 @@ public class HonoClientSettings extends AbstractKapuaSetting<HonoClientSettingsK
      * 
      * @return
      */
-    public static HonoClientSettings getInstance() {
+    public static ActiveMQLifecycleSettings getInstance() {
         return INSTANCE;
     }
 }

@@ -15,6 +15,7 @@ import org.apache.qpid.proton.amqp.Binary;
 import org.apache.qpid.proton.amqp.messaging.Data;
 import org.apache.qpid.proton.message.Message;
 import org.apache.qpid.proton.message.impl.MessageImpl;
+import org.eclipse.kapua.broker.client.amqp.ClientOptions.AmqpClientOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,9 +29,11 @@ public class AmqpSender extends AbstractAmqpClient {
 
     private static final Logger logger = LoggerFactory.getLogger(AmqpSender.class);
     private ProtonSender protonSender;
+    private String destination;
 
-    public AmqpSender(Vertx vertx) {
-        super(vertx);
+    public AmqpSender(Vertx vertx, ClientOptions clientOptions) {
+        super(vertx, clientOptions);
+        destination = clientOptions.getString(AmqpClientOptions.DESTINATION);
     }
 
     protected void registerAction(ProtonConnection connection, Future<Object> future) {

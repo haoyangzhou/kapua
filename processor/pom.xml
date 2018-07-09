@@ -27,6 +27,7 @@
     <modules>
         <module>api</module>
         <module>datastore</module>
+        <module>lifecycle</module>
         <module>logger</module>
         <!-- error handling -->
         <module>error-processor-amqp-activemq</module>

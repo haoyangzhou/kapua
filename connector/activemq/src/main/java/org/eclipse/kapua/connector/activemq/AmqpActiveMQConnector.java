@@ -18,6 +18,7 @@ import java.util.Map;
 import org.apache.qpid.proton.message.Message;
 import org.eclipse.kapua.KapuaException;
 import org.eclipse.kapua.broker.client.amqp.AmqpConsumer;
+import org.eclipse.kapua.broker.client.amqp.ClientOptions;
 import org.eclipse.kapua.commons.setting.system.SystemSetting;
 import org.eclipse.kapua.connector.AmqpAbstractConnector;
 import org.eclipse.kapua.connector.MessageContext;
@@ -46,10 +47,10 @@ public class AmqpActiveMQConnector extends AmqpAbstractConnector<TransportMessag
 
     private AmqpConsumer consumer;
 
-    public AmqpActiveMQConnector(Vertx vertx, Converter<byte[], TransportMessage> converter, Processor<TransportMessage> processor, @SuppressWarnings("rawtypes") Processor errorProcessor) {
+    public AmqpActiveMQConnector(Vertx vertx, ClientOptions clientOptions, Converter<byte[], TransportMessage> converter, Processor<TransportMessage> processor, @SuppressWarnings("rawtypes") Processor errorProcessor) {
         super(vertx, converter, processor, errorProcessor);
         context = vertx.getOrCreateContext();
-        consumer = new AmqpConsumer(vertx, (delivery, message) -> {
+        consumer = new AmqpConsumer(vertx, clientOptions, (delivery, message) -> {
                 try {
                     super.handleMessage(new MessageContext<Message>(message));
                 } catch (KapuaException e) {
@@ -61,10 +62,12 @@ public class AmqpActiveMQConnector extends AmqpAbstractConnector<TransportMessag
 
     @Override
     public void startInternal(Future<Void> startFuture) {
+        connect(startFuture);
     }
 
     @Override
     public void stopInternal(Future<Void> stopFuture) {
+        disconnect(stopFuture);
     }
 
     @Override
