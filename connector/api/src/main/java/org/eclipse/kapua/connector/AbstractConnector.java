@@ -11,9 +11,9 @@
  *******************************************************************************/
 package org.eclipse.kapua.connector;
 
+import org.eclipse.kapua.KapuaException;
 import org.eclipse.kapua.converter.Converter;
 import org.eclipse.kapua.converter.KapuaConverterException;
-import org.eclipse.kapua.processor.KapuaProcessorException;
 import org.eclipse.kapua.processor.Processor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +36,8 @@ public abstract class AbstractConnector<M, P> extends AbstractVerticle {
     protected Vertx vertx;
     protected Converter<M, P> converter;
     protected Processor<P> processor;
+    @SuppressWarnings("rawtypes")
+    protected Processor errorProcessor;
     private boolean connected;
 
     /**
@@ -43,10 +45,12 @@ public abstract class AbstractConnector<M, P> extends AbstractVerticle {
      * @param Vertx instance
      * @param converter message instance
      * @param processor processor instance
+     * @param errorProcessor error processor instance (handles messages errors)
      */
-    protected AbstractConnector(Vertx vertx, Converter<M, P> converter, Processor<P> processor) {
+    protected AbstractConnector(Vertx vertx, Converter<M, P> converter, Processor<P> processor, @SuppressWarnings("rawtypes") Processor errorProcessor) {
         this.converter = converter;
         this.processor = processor;
+        this.errorProcessor = errorProcessor;
         this.vertx = vertx;
     }
 
@@ -56,7 +60,7 @@ public abstract class AbstractConnector<M, P> extends AbstractVerticle {
      * @param processor processor instance
      */
     protected AbstractConnector(Vertx vertx, Processor<P> processor) {
-        this(vertx, null, processor);
+        this(vertx, null, processor, null);
     }
 
     /**
@@ -112,16 +116,26 @@ public abstract class AbstractConnector<M, P> extends AbstractVerticle {
     }
 
     @SuppressWarnings("unchecked")
-    protected void handleMessage(MessageContext<?> message) throws KapuaConnectorException, KapuaConverterException, KapuaProcessorException {
-        MessageContext<M> msg = convert(message);
-        MessageContext<P> convertedMessage = null;
-        if (converter != null) {
-            convertedMessage = converter.convert(msg);
-        } else {
-            convertedMessage = (MessageContext<P>) msg;
+    protected void handleMessage(MessageContext<?> message) throws KapuaException {
+        try {
+            MessageContext<M> msg = convert(message);
+            MessageContext<P> convertedMessage = null;
+            if (converter != null) {
+                convertedMessage = converter.convert(msg);
+            } else {
+                convertedMessage = (MessageContext<P>) msg;
+            }
+            processor.process(convertedMessage);
         }
-
-        processor.process(convertedMessage);
+        catch (Exception e) {//TODO catch Throwable?
+            if (errorProcessor!=null) {
+                errorProcessor.process(message);
+            }
+            else {
+                //error handler
+                throw KapuaException.internalError(e);
+            }
+        }
     }
 
     @Override
@@ -144,4 +158,5 @@ public abstract class AbstractConnector<M, P> extends AbstractVerticle {
         });
         stopInternal(composerFuture);
     }
+
 }

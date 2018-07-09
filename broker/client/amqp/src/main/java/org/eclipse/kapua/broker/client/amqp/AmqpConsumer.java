@@ -1,0 +1,51 @@
+/*******************************************************************************
+ * Copyright (c) 2018 Eurotech and/or its affiliates and others
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * Contributors:
+ *     Eurotech - initial API and implementation
+ *******************************************************************************/
+package org.eclipse.kapua.broker.client.amqp;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.vertx.core.Future;
+import io.vertx.core.Vertx;
+import io.vertx.proton.ProtonConnection;
+import io.vertx.proton.ProtonMessageHandler;
+
+public class AmqpConsumer extends AbstractAmqpClient {
+
+    private static final Logger logger = LoggerFactory.getLogger(AmqpConsumer.class);
+    private ProtonMessageHandler messageHandler;
+
+    public AmqpConsumer(Vertx vertx, ProtonMessageHandler messageHandler) {
+        super(vertx);
+        this.messageHandler = messageHandler;
+    }
+
+    protected void registerAction(ProtonConnection connection, Future<Object> future) {
+        try {
+            logger.info("Register consumer for destination {}...", destination);
+
+            if (connection.isDisconnected()) {
+                future.fail("Cannot register consumer since the connection is not opened!");
+            }
+            else {
+                // The client ID is set implicitly into the queue subscribed
+                connection.createReceiver(destination).handler(messageHandler).open();
+                logger.info("Register consumer for queue {}... DONE", destination);
+                future.complete();
+            }
+        }
+        catch(Exception e) {
+            future.fail(e);
+        }
+    }
+
+}

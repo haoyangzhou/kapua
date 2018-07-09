@@ -24,6 +24,7 @@ import org.eclipse.kapua.commons.util.xml.XmlUtil;
 import org.eclipse.kapua.connector.activemq.AmqpActiveMQConnector;
 import org.eclipse.kapua.converter.kura.KuraPayloadProtoConverter;
 import org.eclipse.kapua.processor.datastore.DatastoreProcessor;
+import org.eclipse.kapua.processor.error.amqp.activemq.ErrorProcessor;
 import org.eclipse.kapua.service.liquibase.KapuaLiquibaseClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +51,7 @@ public class Consumer extends AbstractApplication {
     private AmqpActiveMQConnector connector;
     private KuraPayloadProtoConverter converter;
     private DatastoreProcessor processor;
+    private ErrorProcessor errorProcessor;
 
     protected Consumer() {
         SystemSetting configSys = SystemSetting.getInstance();
@@ -74,8 +76,10 @@ public class Consumer extends AbstractApplication {
         converter = new KuraPayloadProtoConverter();
         logger.info("Instantiating Datastore Consumer... initializing DataStoreProcessor");
         processor = new DatastoreProcessor();
+        logger.info("Instantiating Datastore Consumer... initializing ErrorProcessor");
+        errorProcessor = new ErrorProcessor(applicationContext.getVertx());
         logger.info("Instantiating Datastore Consumer... instantiating AmqpActiveMQConnector");
-        connector = new AmqpActiveMQConnector(applicationContext.getVertx(), converter, processor);
+        connector = new AmqpActiveMQConnector(applicationContext.getVertx(), converter, processor, errorProcessor);
         logger.info("Instantiating Datastore Consumer... DONE");
         applicationContext.getVertx().deployVerticle(connector, ar -> {
             if (ar.succeeded()) {

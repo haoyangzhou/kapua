@@ -54,6 +54,10 @@
         </dependency>
         <dependency>
             <groupId>org.eclipse.kapua</groupId>
+            <artifactId>kapua-processor-error-amqp-activemq</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.kapua</groupId>
             <artifactId>kapua-message-api</artifactId>
         </dependency>
         <dependency>

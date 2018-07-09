@@ -9,49 +9,53 @@
  * Contributors:
  *     Eurotech - initial API and implementation
  *******************************************************************************/
-package org.eclipse.kapua.connector.activemq.settings;
+package org.eclipse.kapua.broker.client.amqp.settings;
 
 import org.eclipse.kapua.commons.setting.SettingKey;
 
 /**
- * ConnectorActiveMQSettingsKey keys.
+ * AmqpClientSettingsKey keys.
  * 
  * @since 1.0
  */
-public enum ConnectorActiveMQSettingsKey implements SettingKey {
+public enum AmqpClientSettingsKey implements SettingKey {
 
     /**
      * Broker name (or ip)
      */
-    BROKER_HOST("connector.activemq.broker.host"),
+    BROKER_HOST("amqp.client.broker.host"),
     /**
      * Broker url
      */
-    BROKER_PORT("connector.activemq.broker.port"),
+    BROKER_PORT("amqp.client.broker.port"),
     /**
      * Username
      */
-    BROKER_USERNAME("connector.activemq.broker.username"),
+    BROKER_USERNAME("amqp.client.broker.username"),
     /**
      * Broker password
      */
-    BROKER_PASSWORD("connector.activemq.broker.password"),
+    BROKER_PASSWORD("amqp.client.broker.password"),
     /**
      * Broker client id
      */
-    BROKER_CLIENT_ID("connector.activemq.broker.client_id"),
+    BROKER_CLIENT_ID("amqp.client.broker.client_id"),
+    /**
+     * Destination to subscribe/produce
+     */
+    DESTINATION("amqp.client.broker.destination"),
     /**
      * Maximum reconnection attempt (without any success between them) before exiting JVM (negative numbers means no exit)
      */
-    MAX_RECONNECTION_ATTEMPTS("connector.activemq.maximum_reconnection_attempt"),
+    MAX_RECONNECTION_ATTEMPTS("amqp.client.maximum_reconnection_attempt"),
     /**
      * Exiting code when maximum reconnection attempt is reached
      */
-    EXIT_CODE("connector.activemq.exit_code");
+    EXIT_CODE("amqp.client.exit_code");
 
     private String key;
 
-    private ConnectorActiveMQSettingsKey(String key) {
+    private AmqpClientSettingsKey(String key) {
         this.key = key;
     }
 

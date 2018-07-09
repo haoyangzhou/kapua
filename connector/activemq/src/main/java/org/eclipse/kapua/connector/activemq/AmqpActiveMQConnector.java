@@ -11,37 +11,27 @@
  *******************************************************************************/
 package org.eclipse.kapua.connector.activemq;
 
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
-//import java.util.function.Consumer;
 
 import org.apache.qpid.proton.message.Message;
+import org.eclipse.kapua.KapuaException;
+import org.eclipse.kapua.broker.client.amqp.AmqpConsumer;
 import org.eclipse.kapua.commons.setting.system.SystemSetting;
-//import org.eclipse.hono.client.MessageConsumer;
-//import org.eclipse.hono.util.MessageTap;
 import org.eclipse.kapua.connector.AmqpAbstractConnector;
-import org.eclipse.kapua.connector.KapuaConnectorException;
 import org.eclipse.kapua.connector.MessageContext;
-import org.eclipse.kapua.connector.activemq.settings.ConnectorActiveMQSettings;
-import org.eclipse.kapua.connector.activemq.settings.ConnectorActiveMQSettingsKey;
 import org.eclipse.kapua.converter.Converter;
 import org.eclipse.kapua.converter.KapuaConverterException;
 import org.eclipse.kapua.message.transport.TransportMessage;
 import org.eclipse.kapua.message.transport.TransportMessageType;
 import org.eclipse.kapua.message.transport.TransportQos;
-import org.eclipse.kapua.processor.KapuaProcessorException;
 import org.eclipse.kapua.processor.Processor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.vertx.core.Context;
 import io.vertx.core.Future;
-//import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
-import io.vertx.proton.ProtonClient;
-import io.vertx.proton.ProtonClientOptions;
-import io.vertx.proton.ProtonConnection;
-import io.vertx.proton.ProtonDelivery;
 
 /**
  * AMQP ActiveMQ connector implementation
@@ -52,145 +42,41 @@ public class AmqpActiveMQConnector extends AmqpAbstractConnector<TransportMessag
     protected final static Logger logger = LoggerFactory.getLogger(AmqpActiveMQConnector.class);
 
     private final static String ACTIVEMQ_QOS = "ActiveMQ.MQTT.QoS";
-    private final static String QUEUE_PATTERN = "queue://Consumer.%s.VirtualTopic.>";
     private final static String CLASSIFIER = SystemSetting.getInstance().getMessageClassifier();
 
-    private Context context;
-    private ProtonClient client;
-    private ProtonConnection connection;
+    private AmqpConsumer consumer;
 
-    private String brokerHost;
-    private int brokerPort;
-
-    public AmqpActiveMQConnector(Vertx vertx, Converter<byte[], TransportMessage> converter, Processor<TransportMessage> processor) {
-        super(vertx, converter, processor);
-
-        brokerHost = ConnectorActiveMQSettings.getInstance().getString(ConnectorActiveMQSettingsKey.BROKER_HOST);
-        brokerPort = ConnectorActiveMQSettings.getInstance().getInt(ConnectorActiveMQSettingsKey.BROKER_PORT);
-        Map<String, Object> configuration = new HashMap<>();
-        configuration.put(AmqpAbstractConnector.KEY_MAX_RECONNECTION_ATTEMPTS, ConnectorActiveMQSettings.getInstance().getInt(ConnectorActiveMQSettingsKey.MAX_RECONNECTION_ATTEMPTS));
-        configuration.put(AmqpAbstractConnector.KEY_EXIT_CODE, ConnectorActiveMQSettings.getInstance().getInt(ConnectorActiveMQSettingsKey.EXIT_CODE));
-        setConfiguration(configuration);
-
+    public AmqpActiveMQConnector(Vertx vertx, Converter<byte[], TransportMessage> converter, Processor<TransportMessage> processor, @SuppressWarnings("rawtypes") Processor errorProcessor) {
+        super(vertx, converter, processor, errorProcessor);
         context = vertx.getOrCreateContext();
+        consumer = new AmqpConsumer(vertx, (delivery, message) -> {
+                try {
+                    super.handleMessage(new MessageContext<Message>(message));
+                } catch (KapuaException e) {
+                    logger.error("Exception while processing message: {}", e.getMessage(), e);
+                    //TODO check how to have the message not acknowledged
+                }
+            });
     }
 
     @Override
     public void startInternal(Future<Void> startFuture) {
-        connect(startFuture);
-    }
-
-    protected void connect(Future<Void> startFuture) {
-        logger.info("Connecting to broker {}:{}...", brokerHost, brokerPort);
-        // make sure connection is already closed
-        if (connection != null && !connection.isDisconnected()) {
-            if (!startFuture.isComplete()) {
-                startFuture.fail("Unable to connect: still connected");
-            }
-            return;
-        }
-
-        client = ProtonClient.create(vertx);
-        ProtonClientOptions options = new ProtonClientOptions();
-        //TODO get parameters from configuration
-        options.setConnectTimeout(60);
-        options.setIdleTimeout(60);
-        options.setHeartbeat(15000);
-        client.connect(
-                options,
-                brokerHost,
-                brokerPort,
-                ConnectorActiveMQSettings.getInstance().getString(ConnectorActiveMQSettingsKey.BROKER_USERNAME),
-                ConnectorActiveMQSettings.getInstance().getString(ConnectorActiveMQSettingsKey.BROKER_PASSWORD),
-                asynchResult ->{
-                    if (asynchResult.succeeded()) {
-                        logger.info("Connecting to broker {}:{}... Creating receiver... DONE", brokerHost, brokerPort);
-                        connection = asynchResult.result();
-                        connection.openHandler((event) -> {
-                            if (event.succeeded()) {
-                                connection = event.result();
-                                context.executeBlocking(future -> registerConsumer(asynchResult.result(), future), result -> {
-                                    if (result.succeeded()) {
-                                        logger.debug("Starting connector...DONE");
-                                        setConnected(true);
-                                        startFuture.complete();
-                                    } else {
-                                        logger.warn("Starting connector...FAIL [message:{}]", result.cause().getMessage());
-                                        if (!startFuture.isComplete()) {
-                                            startFuture.fail(asynchResult.cause());
-                                        }
-                                        setConnected(false);
-                                        notifyConnectionLost();
-                                    }
-                                });
-                            }
-                            else {
-                                startFuture.fail("Cannot establish connection!");
-                                setConnected(false);
-                                notifyConnectionLost();
-                            }
-                        });
-                        connection.open();
-                    } else {
-                        logger.error("Cannot register ActiveMQ connection! ", asynchResult.cause().getCause());
-                        if (!startFuture.isComplete()) {
-                            startFuture.fail(asynchResult.cause());
-                        }
-                        setConnected(false);
-                        notifyConnectionLost();
-                    }
-                });
-
     }
 
     @Override
     public void stopInternal(Future<Void> stopFuture) {
-        disconnect(stopFuture);
     }
 
     @Override
-    protected void disconnect(Future<Void> stopFuture) {
+    protected void connect(Future<Void> connectFuture) {
+        logger.info("Opening broker connection...");
+        consumer.connect(connectFuture);
+    }
+
+    @Override
+    protected void disconnect(Future<Void> disconnectFuture) {
         logger.info("Closing broker connection...");
-        if (connection != null) {
-            connection.close();
-            connection = null;
-            stopFuture.complete();
-        }
-    }
-
-    private void registerConsumer(ProtonConnection connection, Future<Object> future) {
-        try {
-            String queue = String.format(QUEUE_PATTERN,
-                    ConnectorActiveMQSettings.getInstance().getString(ConnectorActiveMQSettingsKey.BROKER_CLIENT_ID));
-            logger.info("Register consumer for queue {}...", queue);
-
-            if (connection.isDisconnected()) {
-                future.fail("Cannot register consumer since the connection is not opened!");
-            }
-            else {
-                // The client ID is set implicitly into the queue subscribed
-                connection.createReceiver(queue).handler(this::handleInternalMessage).open();
-                logger.info("Register consumer for queue {}... DONE", queue);
-                future.complete();
-            }
-        }
-        catch(Exception e) {
-            future.fail(e);
-        }
-    }
-
-    /**
-     * Callback for Proton Message receiver implementing interface ProtonMessageHandler
-     *
-     * @param delivery
-     * @param message
-     */
-    public void handleInternalMessage(ProtonDelivery delivery, Message message) {
-        try {
-            super.handleMessage(new MessageContext<Message>(message));
-        } catch (KapuaConnectorException | KapuaConverterException | KapuaProcessorException e) {
-            logger.error("Exception while processing message: {}", e.getMessage(), e);
-        }
+        consumer.disconnect(disconnectFuture);
     }
 
     @Override
@@ -205,11 +91,15 @@ public class AmqpActiveMQConnector extends AmqpAbstractConnector<TransportMessag
         // FIXME: pluggable message types and dialects
         if (CLASSIFIER.equals(mqttTopic)) {
             parameters.put(Converter.MESSAGE_TYPE, TransportMessageType.CONTROL);
-            mqttTopic = mqttTopic.substring("$EDC".length());
+            mqttTopic = mqttTopic.substring(CLASSIFIER.length());
         } else {
             parameters.put(Converter.MESSAGE_TYPE, TransportMessageType.TELEMETRY);
         }
         parameters.put(Converter.MESSAGE_DESTINATION, mqttTopic);
+
+        //extract connection id
+        parameters.put(Converter.CONNECTION_ID, 
+                Base64.getDecoder().decode((String)message.getApplicationProperties().getValue().get(Converter.HEADER_KAPUA_CONNECTION_ID)));
 
         // extract the original QoS
         Object activeMqQos = message.getApplicationProperties().getValue().get(ACTIVEMQ_QOS);
