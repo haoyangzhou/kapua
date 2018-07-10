@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.MoreObjects;
 
 import io.vertx.ext.healthchecks.Status;
+import io.vertx.proton.ProtonQoS;
 
 /**
  * ActiveMQ AMQP consumer with Kura payload converter and Kapua data store ingestion
@@ -75,6 +76,8 @@ public class Consumer extends AbstractApplication {
                 ActiveMQDatastoreSettings.getInstance().getInt(ActiveMQDatastoreSettingsKey.CONNECTION_PORT),
                 ActiveMQDatastoreSettings.getInstance().getString(ActiveMQDatastoreSettingsKey.CONNECTION_USERNAME),
                 ActiveMQDatastoreSettings.getInstance().getString(ActiveMQDatastoreSettingsKey.CONNECTION_PASSWORD));
+        connectorOptions.put(AmqpClientOptions.AUTO_ACCEPT, false);
+        connectorOptions.put(AmqpClientOptions.QOS, ProtonQoS.AT_LEAST_ONCE);
         connectorOptions.put(AmqpClientOptions.CLIENT_ID, ActiveMQDatastoreSettings.getInstance().getString(ActiveMQDatastoreSettingsKey.TELEMETRY_CLIENT_ID));
         connectorOptions.put(AmqpClientOptions.DESTINATION, ActiveMQDatastoreSettings.getInstance().getString(ActiveMQDatastoreSettingsKey.TELEMETRY_DESTINATION));
         connectorOptions.put(AmqpClientOptions.CONNECT_TIMEOUT, ActiveMQDatastoreSettings.getInstance().getInt(ActiveMQDatastoreSettingsKey.CONNECT_TIMEOUT));
@@ -86,6 +89,8 @@ public class Consumer extends AbstractApplication {
                 ActiveMQDatastoreSettings.getInstance().getInt(ActiveMQDatastoreSettingsKey.CONNECTION_PORT),
                 ActiveMQDatastoreSettings.getInstance().getString(ActiveMQDatastoreSettingsKey.CONNECTION_USERNAME),
                 ActiveMQDatastoreSettings.getInstance().getString(ActiveMQDatastoreSettingsKey.CONNECTION_PASSWORD));
+        errorOptions.put(AmqpClientOptions.AUTO_ACCEPT, false);
+        errorOptions.put(AmqpClientOptions.QOS, ProtonQoS.AT_LEAST_ONCE);
         errorOptions.put(AmqpClientOptions.CLIENT_ID, ActiveMQDatastoreSettings.getInstance().getString(ActiveMQDatastoreSettingsKey.ERROR_CLIENT_ID));
         errorOptions.put(AmqpClientOptions.DESTINATION, ActiveMQDatastoreSettings.getInstance().getString(ActiveMQDatastoreSettingsKey.ERROR_DESTINATION));
         errorOptions.put(AmqpClientOptions.CONNECT_TIMEOUT, ActiveMQDatastoreSettings.getInstance().getInt(ActiveMQDatastoreSettingsKey.CONNECT_TIMEOUT));
@@ -103,7 +108,7 @@ public class Consumer extends AbstractApplication {
         logger.info("Instantiating Datastore Consumer... initializing KuraPayloadProtoConverter");
         converter = new KuraPayloadProtoConverter();
         logger.info("Instantiating Datastore Consumer... initializing DataStoreProcessor");
-        processor = new DatastoreProcessor();
+        processor = new DatastoreProcessor(applicationContext.getVertx());
         logger.info("Instantiating Datastore Consumer... initializing ErrorProcessor");
         errorProcessor = new ErrorProcessor(applicationContext.getVertx(), errorOptions);
         logger.info("Instantiating Datastore Consumer... instantiating AmqpActiveMQConnector");

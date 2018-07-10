@@ -19,6 +19,8 @@ import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.proton.ProtonConnection;
 import io.vertx.proton.ProtonMessageHandler;
+import io.vertx.proton.ProtonQoS;
+import io.vertx.proton.ProtonReceiver;
 
 public class AmqpConsumer extends AbstractAmqpClient {
 
@@ -40,7 +42,10 @@ public class AmqpConsumer extends AbstractAmqpClient {
             }
             else {
                 // The client ID is set implicitly into the queue subscribed
-                connection.createReceiver(destination).handler(messageHandler).open();
+                ProtonReceiver receiver = connection.createReceiver(destination);
+                receiver.setAutoAccept((boolean)clientOptions.get(AmqpClientOptions.AUTO_ACCEPT));
+                receiver.setQoS((ProtonQoS)clientOptions.get(AmqpClientOptions.QOS));
+                receiver.handler(messageHandler).open();
                 logger.info("Register consumer for queue {}... DONE", destination);
                 future.complete();
             }

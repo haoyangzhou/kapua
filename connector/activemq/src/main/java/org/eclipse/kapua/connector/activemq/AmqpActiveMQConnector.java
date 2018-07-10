@@ -16,7 +16,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.qpid.proton.message.Message;
-import org.eclipse.kapua.KapuaException;
 import org.eclipse.kapua.broker.client.amqp.AmqpConsumer;
 import org.eclipse.kapua.broker.client.amqp.ClientOptions;
 import org.eclipse.kapua.commons.setting.system.SystemSetting;
@@ -31,8 +30,11 @@ import org.eclipse.kapua.processor.Processor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
+import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import io.vertx.proton.ProtonHelper;
 
 /**
  * AMQP ActiveMQ connector implementation
@@ -47,15 +49,36 @@ public class AmqpActiveMQConnector extends AmqpAbstractConnector<TransportMessag
 
     private AmqpConsumer consumer;
 
-    public AmqpActiveMQConnector(Vertx vertx, ClientOptions clientOptions, Converter<byte[], TransportMessage> converter, Processor<TransportMessage> processor, @SuppressWarnings("rawtypes") Processor errorProcessor) {
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    public AmqpActiveMQConnector(Vertx vertx, ClientOptions clientOptions, Converter<byte[], TransportMessage> converter, Processor<TransportMessage> processor, Processor<?> errorProcessor) {
         super(vertx, converter, processor, errorProcessor);
-        context = vertx.getOrCreateContext();
         consumer = new AmqpConsumer(vertx, clientOptions, (delivery, message) -> {
                 try {
-                    super.handleMessage(new MessageContext<Message>(message));
-                } catch (KapuaException e) {
+                    super.handleMessage(new MessageContext<Message>(message), result -> {
+                        if (result.succeeded()) {
+                            ProtonHelper.accepted(delivery, true);
+                        }
+                        else {
+                            try {
+                                errorProcessor.process(new MessageContext(message), new Handler<AsyncResult<Void>>() {
+                                    @Override
+                                    public void handle(AsyncResult<Void> event) {
+                                        if (event.succeeded()) {
+                                            ProtonHelper.accepted(delivery, true);
+                                        }
+                                        else {
+                                            ProtonHelper.released(delivery, true);
+                                        }
+                                    }
+                                });
+                            } catch (Exception e1) {
+                                ProtonHelper.released(delivery, true);
+                            }
+                        }
+                    });
+                } catch (Exception e) {
                     logger.error("Exception while processing message: {}", e.getMessage(), e);
-                    //TODO check how to have the message not acknowledged
+                    ProtonHelper.released(delivery, true);
                 }
             });
     }

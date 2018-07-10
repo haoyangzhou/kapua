@@ -20,11 +20,17 @@ import org.eclipse.kapua.processor.Processor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
+import io.vertx.core.Handler;
 
 public class LifecycleProcessor implements Processor<TransportMessage> {
 
     private static final Logger logger = LoggerFactory.getLogger(LifecycleProcessor.class);
+
+    private static final String INVALID_TOPIC = "Cannot detect destination!";
+
+    private LifecycleListener lifecycleListener;
 
     //TODO keep messages types as enum or switch to String?
     enum LifecycleTypes {
@@ -33,6 +39,10 @@ public class LifecycleProcessor implements Processor<TransportMessage> {
         DC,
         MISSING,
         NOTIFY
+    }
+
+    public LifecycleProcessor() {
+        lifecycleListener = new LifecycleListener();
     }
 
     @Override
@@ -48,33 +58,33 @@ public class LifecycleProcessor implements Processor<TransportMessage> {
     }
 
     @Override
-    public void process(MessageContext<TransportMessage> message) throws KapuaProcessorException {
+    public void process(MessageContext<TransportMessage> message, Handler<AsyncResult<Void>> result) throws KapuaProcessorException {
         List<String> destination = message.getMessage().getChannel().getSemanticParts();
         if (destination!=null && destination.size()>1) {
             LifecycleTypes token = LifecycleTypes.valueOf(destination.get(1));
             switch (token) {
             case APPS:
-                LifecycleListener.getInstance().processAppsMessage(message);
+                lifecycleListener.processAppsMessage(message);
                 break;
             case BIRTH:
-                LifecycleListener.getInstance().processBirthMessage(message);
+                lifecycleListener.processBirthMessage(message);
                 break;
             case DC:
-                LifecycleListener.getInstance().processDisconnectMessage(message);
+                lifecycleListener.processDisconnectMessage(message);
                 break;
             case MISSING:
-                LifecycleListener.getInstance().processMissingMessage(message);
+                lifecycleListener.processMissingMessage(message);
                 break;
             case NOTIFY:
-                LifecycleListener.getInstance().processNotifyMessage(message);
+                lifecycleListener.processNotifyMessage(message);
                 break;
             default:
-                //throw exception??
+                result.handle(Future.succeededFuture());
                 break;
             }
         }
         else {
-            //throw exception??
+            result.handle(Future.failedFuture(INVALID_TOPIC));
         }
     }
 

@@ -54,12 +54,6 @@ public class LifecycleListener {
     public static final String HEADER_KAPUA_CONNECTION_ID = "KAPUA_CONNECTION_ID";
     private static final Logger logger = LoggerFactory.getLogger(LifecycleListener.class);
 
-    private static LifecycleListener instance;
-
-    static {
-        instance = new LifecycleListener();
-    }
-
     private static DeviceLifeCycleService deviceLifeCycleService = KapuaLocator.getInstance().getService(DeviceLifeCycleService.class);
     private static DeviceRegistryService deviceRegistryService = KapuaLocator.getInstance().getService(DeviceRegistryService.class);
     private static AccountService accountService = KapuaLocator.getInstance().getService(AccountService.class);
@@ -85,14 +79,6 @@ public class LifecycleListener {
         metricDeviceNotifyMessage = registerCounter("messages", "notify", "count");
         metricDeviceUnmatchedMessage = registerCounter("messages", "unmatched", "count");
         metricDeviceErrorMessage = registerCounter("messages", "error", "count");
-    }
-
-    /**
-     * return the singleton LifecycleListener instance
-     * @return
-     */
-    public static LifecycleListener getInstance() {
-        return instance;
     }
 
     protected Counter registerCounter(String... names) {

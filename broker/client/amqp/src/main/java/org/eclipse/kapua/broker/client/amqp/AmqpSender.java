@@ -11,10 +11,7 @@
  *******************************************************************************/
 package org.eclipse.kapua.broker.client.amqp;
 
-import org.apache.qpid.proton.amqp.Binary;
-import org.apache.qpid.proton.amqp.messaging.Data;
 import org.apache.qpid.proton.message.Message;
-import org.apache.qpid.proton.message.impl.MessageImpl;
 import org.eclipse.kapua.broker.client.amqp.ClientOptions.AmqpClientOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,10 +53,8 @@ public class AmqpSender extends AbstractAmqpClient {
         }
     }
 
-    public void send(byte[] data) {
-        Message message = new MessageImpl();
+    public void send(Message message) {
         message.setAddress(destination);
-        message.setBody(new Data(new Binary(data)));
         protonSender.send(message);
     }
 

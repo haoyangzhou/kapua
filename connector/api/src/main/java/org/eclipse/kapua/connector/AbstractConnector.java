@@ -19,7 +19,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
+import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 
 /**
@@ -102,6 +104,16 @@ public abstract class AbstractConnector<M, P> extends AbstractVerticle {
             startInternal(internalFuture);
             return internalFuture;
         })
+        .compose(mapper -> {
+            Future<Void> internalFuture = Future.future();
+            if(errorProcessor != null) {
+                errorProcessor.start(internalFuture);
+            }
+            else {
+                internalFuture.complete();
+            }
+            return internalFuture;
+        })
         .setHandler(result -> {
             if (result.succeeded()) {
                 logger.debug("Starting connector...DONE");
@@ -116,26 +128,33 @@ public abstract class AbstractConnector<M, P> extends AbstractVerticle {
     }
 
     @SuppressWarnings("unchecked")
-    protected void handleMessage(MessageContext<?> message) throws KapuaException {
-        try {
-            MessageContext<M> msg = convert(message);
-            MessageContext<P> convertedMessage = null;
-            if (converter != null) {
-                convertedMessage = converter.convert(msg);
+    //TODO choose the exception type!!!
+    protected void handleMessage(MessageContext<?> message, Handler<AsyncResult<Void>> result) throws Exception {
+        MessageContext<M> msg = convert(message);
+        Future<Void> composerFuture = Future.future();
+        composerFuture.compose(mapper -> {
+            Future<Void> internalFuture = Future.future();
+            try {
+                MessageContext<P> convertedMessage = null;
+                if (converter != null) {
+                    convertedMessage = converter.convert(msg);
+                } else {
+                    convertedMessage = (MessageContext<P>) msg;
+                }
+                processor.process(convertedMessage, internalFuture);
+            } catch (KapuaException e) {
+                internalFuture.fail(e);
+            }
+            return internalFuture;
+        })
+        .setHandler(ar -> {
+            if (ar.succeeded()) {
+                result.handle(Future.succeededFuture());
             } else {
-                convertedMessage = (MessageContext<P>) msg;
+                result.handle(Future.failedFuture(ar.cause()));
             }
-            processor.process(convertedMessage);
-        }
-        catch (Exception e) {//TODO catch Throwable?
-            if (errorProcessor!=null) {
-                errorProcessor.process(message);
-            }
-            else {
-                //error handler
-                throw KapuaException.internalError(e);
-            }
-        }
+        });
+        composerFuture.complete();
     }
 
     @Override
@@ -145,6 +164,16 @@ public abstract class AbstractConnector<M, P> extends AbstractVerticle {
         composerFuture.compose(mapper -> {
             Future<Void> internalFuture = Future.future();
             processor.stop(internalFuture);
+            return internalFuture;
+        })
+        .compose(mapper -> {
+            Future<Void> internalFuture = Future.future();
+            if(errorProcessor != null) {
+                errorProcessor.stop(internalFuture);
+            }
+            else {
+                internalFuture.complete();
+            }
             return internalFuture;
         })
         .setHandler(result -> {

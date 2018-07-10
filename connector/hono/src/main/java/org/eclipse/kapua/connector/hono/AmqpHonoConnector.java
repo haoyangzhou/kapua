@@ -30,7 +30,9 @@ import org.eclipse.kapua.processor.Processor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
+import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 
 /**
@@ -53,10 +55,12 @@ public class AmqpHonoConnector extends AmqpAbstractConnector<TransportMessage> {
 
     @Override
     protected void startInternal(final Future<Void> startFuture) {
+        connect(startFuture);
     }
 
     @Override
     protected void stopInternal(final Future<Void> stopFuture) {
+        disconnect(stopFuture);
     }
 
     @Override
@@ -71,10 +75,38 @@ public class AmqpHonoConnector extends AmqpAbstractConnector<TransportMessage> {
         honoClient.disconnect(disconnectFuture);
     }
 
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     private void handleTelemetryMessage(final Message message) {
         logTelemetryMessage(message);
         try {
-            super.handleMessage(new MessageContext<Message>(message));
+            //TODO fix me!
+            try {
+                super.handleMessage(new MessageContext<Message>(message), result -> {
+                    if (result.succeeded()) {
+                        //TODO handle ProtonHelper.accepted
+                    }
+                    else {
+                        try {
+                            errorProcessor.process(new MessageContext(message), new Handler<AsyncResult<Void>>() {
+                                @Override
+                                public void handle(AsyncResult<Void> event) {
+                                    if (event.succeeded()) {
+                                        //TODO handle ProtonHelper.accepted
+                                    }
+                                    else {
+                                        //TODO handle ProtonHelper.released
+                                    }
+                                }
+                            });
+                        } catch (Exception e1) {
+                          //TODO handle ProtonHelper.released
+                        }
+                    }
+                });
+            } catch (Exception e) {
+                logger.error("Exception while processing message: {}", e.getMessage(), e);
+                //TODO handle ProtonHelper.released
+            }
         } catch (Exception e) {
             logger.error("Exception while processing message: {}", e.getMessage(), e);
         }

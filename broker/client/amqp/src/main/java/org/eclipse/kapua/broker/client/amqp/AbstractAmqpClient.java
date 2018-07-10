@@ -111,16 +111,15 @@ public abstract class AbstractAmqpClient {
                         connection.openHandler((event) -> {
                             if (event.succeeded()) {
                                 connection = event.result();
-                                context.executeBlocking(future -> registerAction(asynchResult.result(), future), result -> {
+                                //TODO remove execute blocking
+                                context.executeBlocking(future -> registerAction(connection, future), result -> {
                                     if (result.succeeded()) {
                                         logger.debug("Starting connector...DONE");
                                         setConnected(true);
                                         startFuture.complete();
                                     } else {
                                         logger.warn("Starting connector...FAIL [message:{}]", result.cause().getMessage());
-                                        if (!startFuture.isComplete()) {
-                                            startFuture.fail(asynchResult.cause());
-                                        }
+                                        startFuture.fail(asynchResult.cause());
                                         setConnected(false);
                                         notifyConnectionLost();
                                     }

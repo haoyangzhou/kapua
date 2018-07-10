@@ -11,25 +11,22 @@
  *******************************************************************************/
 package org.eclipse.kapua.processor.error.amqp.activemq;
 
-//import org.apache.qpid.proton.amqp.Binary;
-//import org.apache.qpid.proton.amqp.messaging.AmqpValue;
-//import org.apache.qpid.proton.amqp.messaging.Data;
-//import org.apache.qpid.proton.message.Message;
-//import org.apache.qpid.proton.message.impl.MessageImpl;
-//import org.eclipse.kapua.KapuaErrorCodes;
+import org.apache.qpid.proton.message.Message;
+import org.eclipse.kapua.apps.api.HealthCheckable;
 import org.eclipse.kapua.broker.client.amqp.AmqpSender;
 import org.eclipse.kapua.broker.client.amqp.ClientOptions;
 import org.eclipse.kapua.connector.MessageContext;
-import org.eclipse.kapua.message.transport.TransportMessage;
 import org.eclipse.kapua.processor.KapuaProcessorException;
 import org.eclipse.kapua.processor.Processor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
+import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 
-public class ErrorProcessor implements Processor<TransportMessage> {
+public class ErrorProcessor implements Processor<Message> {
 
     private static final Logger logger = LoggerFactory.getLogger(ErrorProcessor.class);
 
@@ -45,20 +42,15 @@ public class ErrorProcessor implements Processor<TransportMessage> {
     }
 
     @Override
-    public void process(MessageContext<TransportMessage> message) throws KapuaProcessorException {
-        sender.send(translate(message));
+    public void process(MessageContext<Message> message, Handler<AsyncResult<Void>> result) throws KapuaProcessorException {
+        sender.send(message.getMessage());
+        result.handle(Future.succeededFuture());
     }
 
     @Override
     public void stop(Future<Void> stopFuture) {
         // nothing to do
         stopFuture.complete();
-    }
-
-    private byte[] translate(MessageContext<TransportMessage> transportMessage) {
-        //TODO missing message creation
-        byte[] data = null;
-        return data;
     }
 
 }

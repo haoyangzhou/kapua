@@ -21,7 +21,9 @@ import org.eclipse.kapua.processor.Processor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
+import io.vertx.core.Handler;
 
 public class LoggerProcessor implements Processor<TransportMessage> {
 
@@ -35,16 +37,18 @@ public class LoggerProcessor implements Processor<TransportMessage> {
     }
 
     @Override
-    public void process(MessageContext<TransportMessage> message) throws KapuaProcessorException {
+    public void process(MessageContext<TransportMessage> message, Handler<AsyncResult<Void>> result) throws KapuaProcessorException {
 
         StringWriter sw = new StringWriter();
         try {
             XmlUtil.marshalJson(message.getMessage(), sw);
         } catch (Exception e) {
+            result.handle(Future.failedFuture(e));
             logger.error("Exception while marshalling message: {}", e.getMessage(), e);
         }
 
         logger.info(sw.toString());
+        result.handle(Future.succeededFuture());
     }
 
     @Override

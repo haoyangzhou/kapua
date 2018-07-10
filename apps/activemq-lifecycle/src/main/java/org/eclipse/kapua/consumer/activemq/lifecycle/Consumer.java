@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.MoreObjects;
 
 import io.vertx.ext.healthchecks.Status;
+import io.vertx.proton.ProtonQoS;
 
 /**
  * ActiveMQ AMQP consumer with Kura payload converter and Kapua lifecycle manager
@@ -53,10 +54,10 @@ public class Consumer extends AbstractApplication {
     }
 
     private ClientOptions connectorOptions;
-    private ClientOptions errorOptions;
     private AmqpActiveMQConnector connector;
     private KuraPayloadProtoConverter converter;
     private LifecycleProcessor processor;
+    private ClientOptions errorOptions;
     private ErrorProcessor errorProcessor;
 
     protected Consumer() {
@@ -80,6 +81,8 @@ public class Consumer extends AbstractApplication {
         connectorOptions.put(AmqpClientOptions.CONNECT_TIMEOUT, ActiveMQLifecycleSettings.getInstance().getInt(ActiveMQLifecycleSettingsKey.CONNECT_TIMEOUT));
         connectorOptions.put(AmqpClientOptions.MAXIMUM_RECONNECTION_ATTEMPTS, ActiveMQLifecycleSettings.getInstance().getInt(ActiveMQLifecycleSettingsKey.MAX_RECONNECTION_ATTEMPTS));
         connectorOptions.put(AmqpClientOptions.IDLE_TIMEOUT, ActiveMQLifecycleSettings.getInstance().getInt(ActiveMQLifecycleSettingsKey.IDLE_TIMEOUT));
+        connectorOptions.put(AmqpClientOptions.AUTO_ACCEPT, false);
+        connectorOptions.put(AmqpClientOptions.QOS, ProtonQoS.AT_LEAST_ONCE);
         errorOptions = new ClientOptions();
         errorOptions = new ClientOptions(
                 ActiveMQLifecycleSettings.getInstance().getString(ActiveMQLifecycleSettingsKey.CONNECTION_HOST),
@@ -91,6 +94,8 @@ public class Consumer extends AbstractApplication {
         errorOptions.put(AmqpClientOptions.CONNECT_TIMEOUT, ActiveMQLifecycleSettings.getInstance().getInt(ActiveMQLifecycleSettingsKey.CONNECT_TIMEOUT));
         errorOptions.put(AmqpClientOptions.MAXIMUM_RECONNECTION_ATTEMPTS, ActiveMQLifecycleSettings.getInstance().getInt(ActiveMQLifecycleSettingsKey.MAX_RECONNECTION_ATTEMPTS));
         errorOptions.put(AmqpClientOptions.IDLE_TIMEOUT, ActiveMQLifecycleSettings.getInstance().getInt(ActiveMQLifecycleSettingsKey.IDLE_TIMEOUT));
+        errorOptions.put(AmqpClientOptions.AUTO_ACCEPT, false);
+        errorOptions.put(AmqpClientOptions.QOS, ProtonQoS.AT_LEAST_ONCE);
     }
 
     @Override
