@@ -24,6 +24,7 @@ import org.eclipse.kapua.connector.AmqpAbstractConnector;
 import org.eclipse.kapua.connector.MessageContext;
 import org.eclipse.kapua.converter.Converter;
 import org.eclipse.kapua.converter.KapuaConverterException;
+import org.eclipse.kapua.message.transport.TransportMessage;
 import org.eclipse.kapua.message.transport.TransportMessageType;
 import org.eclipse.kapua.message.transport.TransportQos;
 import org.eclipse.kapua.processor.Processor;
@@ -39,20 +40,24 @@ import io.vertx.proton.ProtonHelper;
 
 /**
  * AMQP ActiveMQ connector implementation.<br>
- * This connector doesn't do any message processing in the incoming message so it's useful for handling the process of messages in error.
+ * This connector implicitly transform the incoming messages to {@link TransportMessage} with incoming message body (byte[]) as content
  */
-public class AmqpActiveMQConnector extends AmqpAbstractConnector<Message, Message> implements HealthCheckable {
+public class AmqpTransportActiveMQConnector extends AmqpAbstractConnector<byte[], TransportMessage> implements HealthCheckable {
 
-    protected final static Logger logger = LoggerFactory.getLogger(AmqpActiveMQConnector.class);
+    protected final static Logger logger = LoggerFactory.getLogger(AmqpTransportActiveMQConnector.class);
 
     private final static String ACTIVEMQ_QOS = "ActiveMQ.MQTT.QoS";
     private final static String CLASSIFIER = SystemSetting.getInstance().getMessageClassifier();
 
     private AmqpConsumer consumer;
 
+    public AmqpTransportActiveMQConnector(Vertx vertx, ClientOptions clientOptions, Processor<TransportMessage> processor) {
+        this(vertx, clientOptions, null, processor, null);
+    }
+
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    public AmqpActiveMQConnector(Vertx vertx, ClientOptions clientOptions, Processor<Message> processor) {
-        super(vertx, processor);
+    public AmqpTransportActiveMQConnector(Vertx vertx, ClientOptions clientOptions, Converter<byte[], TransportMessage> converter, Processor<TransportMessage> processor, Processor<?> errorProcessor) {
+        super(vertx, converter, processor, errorProcessor);
         consumer = new AmqpConsumer(vertx, clientOptions, (delivery, message) -> {
                 try {
                     super.handleMessage(new MessageContext<Message>(message), result -> {
@@ -107,11 +112,11 @@ public class AmqpActiveMQConnector extends AmqpAbstractConnector<Message, Messag
     }
 
     @Override
-    protected MessageContext<Message> convert(MessageContext<?> message) throws KapuaConverterException {
+    protected MessageContext<byte[]> convert(MessageContext<?> message) throws KapuaConverterException {
         //this cast is safe since this implementation is using the AMQP connector
         Message msg = (Message)message.getMessage();
-        return new MessageContext<Message>(
-                msg,
+        return new MessageContext<byte[]>(
+                extractBytePayload(msg.getBody()),
                 getMessageParameters(msg));
 
         // By default, the receiver automatically accepts (and settles) the delivery

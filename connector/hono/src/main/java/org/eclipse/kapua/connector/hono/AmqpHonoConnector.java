@@ -39,7 +39,7 @@ import io.vertx.core.Vertx;
  * Amqp Hono connector implementation
  *
  */
-public class AmqpHonoConnector extends AmqpAbstractConnector<TransportMessage> {
+public class AmqpHonoConnector extends AmqpAbstractConnector<byte[], TransportMessage> {
 
     protected final static Logger logger = LoggerFactory.getLogger(AmqpHonoConnector.class);
 
@@ -131,6 +131,20 @@ public class AmqpHonoConnector extends AmqpAbstractConnector<TransportMessage> {
         }
         logger.info("received telemetry message:\n\tmessage id '{}' userId '{}' destination '{}' original destination '{}' adapter '{}' tenant '{}' - device '{}' - content-type '{}' - content {}", 
             messageId, userId, to, origAddress, adapter, tenantId, deviceId, msg.getContentType(), ((Data) msg.getBody()).getValue().toString());
+    }
+
+    @Override
+    protected MessageContext<byte[]> convert(MessageContext<?> message) throws KapuaConverterException {
+        //this cast is safe since this implementation is using the AMQP connector
+        Message msg = (Message)message.getMessage();
+        return new MessageContext<byte[]>(
+                extractBytePayload(msg.getBody()),
+                getMessageParameters(msg));
+
+        // By default, the receiver automatically accepts (and settles) the delivery
+        // when the handler returns, if no other disposition has been applied.
+        // To change this and always manage dispositions yourself, use the
+        // setAutoAccept method on the receiver.
     }
 
     @Override

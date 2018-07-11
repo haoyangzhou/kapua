@@ -95,6 +95,7 @@ public abstract class AbstractConnector<M, P> extends AbstractVerticle {
         this.connected = connected;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public void start(Future<Void> startFuture) throws Exception {
         logger.debug("Starting connector...");
@@ -157,6 +158,7 @@ public abstract class AbstractConnector<M, P> extends AbstractVerticle {
         composerFuture.complete();
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public void stop(Future<Void> stopFuture) throws Exception {
         logger.debug("Stopping connector...");

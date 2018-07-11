@@ -28,6 +28,7 @@ import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.ext.healthchecks.HealthCheckHandler;
 import io.vertx.ext.healthchecks.Status;
+import io.vertx.ext.web.Route;
 import io.vertx.ext.web.Router;
 
 /**
@@ -43,8 +44,10 @@ public abstract class AbstractApplication {
     private Vertx vertx;
     private HttpServer httpServer;
     private Router router;
+    String path;
 
-    protected AbstractApplication() {
+    protected AbstractApplication(String path) {
+        this.path = path;
     }
 
     final public void start(String[] args) throws Exception {
@@ -58,10 +61,12 @@ public abstract class AbstractApplication {
         router = Router.router(vertx);
 
         //http server
-        HttpServerOptions httpOoptionns = new HttpServerOptions();
+        HttpServerOptions httpOptions = new HttpServerOptions();
+        httpOptions.setHost("0.0.0.0");
+        httpOptions.setPort(8090);
         //TODO get options
 
-        httpServer = vertx.createHttpServer(httpOoptionns);
+        httpServer = vertx.createHttpServer(httpOptions);
         httpServer.requestHandler(router::accept).listen();
 
         //init application context
@@ -96,6 +101,10 @@ public abstract class AbstractApplication {
         }
     }
 
+    public String getPath() {
+        return path;
+    }
+
     protected abstract CompletableFuture<String> internalStart(ApplicationContext applicationContext) throws Exception;
 
     protected abstract CompletableFuture<String> internalStop(ApplicationContext applicationContext) throws Exception;
@@ -103,9 +112,13 @@ public abstract class AbstractApplication {
     private class ContextImpl implements ApplicationContext {
 
         private AbstractApplication abstractApplication;
+        private Route route;
+        private HealthCheckHandler handler;
 
         public ContextImpl(AbstractApplication abstractApplication) {
             this.abstractApplication = abstractApplication;
+            route = abstractApplication.router.get(getPath());
+            handler = HealthCheckHandler.create(vertx);
         }
 
         @Override
@@ -114,8 +127,13 @@ public abstract class AbstractApplication {
         }
 
         @Override
-        public void registerHealthCheck(String path, String name, Handler<Future<Status>> procedure) {
-            abstractApplication.router.get(path).handler(HealthCheckHandler.create(vertx).register(name, procedure));
+        public void registerHealthCheck(String name, Handler<Future<Status>> procedure) {
+            route.handler(handler.register(name, procedure));
+        }
+
+        @Override
+        public String getPath() {
+            return abstractApplication.getPath();
         }
     }
 

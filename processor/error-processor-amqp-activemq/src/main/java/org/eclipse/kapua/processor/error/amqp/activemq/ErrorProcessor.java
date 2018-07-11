@@ -26,6 +26,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.ext.healthchecks.Status;
+import io.vertx.proton.ProtonHelper;
 
 public class ErrorProcessor implements Processor<Message>, HealthCheckable {
 
@@ -44,7 +45,9 @@ public class ErrorProcessor implements Processor<Message>, HealthCheckable {
 
     @Override
     public void process(MessageContext<Message> message, Handler<AsyncResult<Void>> result) throws KapuaProcessorException {
-        sender.send(message.getMessage());
+        sender.send(message.getMessage(), delivery -> {
+            ProtonHelper.accepted(delivery, true);
+        });
         result.handle(Future.succeededFuture());
     }
 

@@ -23,7 +23,7 @@ import org.eclipse.kapua.commons.jpa.JdbcConnectionUrlResolvers;
 import org.eclipse.kapua.commons.setting.system.SystemSetting;
 import org.eclipse.kapua.commons.setting.system.SystemSettingKey;
 import org.eclipse.kapua.commons.util.xml.XmlUtil;
-import org.eclipse.kapua.connector.activemq.AmqpActiveMQConnector;
+import org.eclipse.kapua.connector.activemq.AmqpTransportActiveMQConnector;
 import org.eclipse.kapua.consumer.activemq.datastore.settings.ActiveMQDatastoreSettings;
 import org.eclipse.kapua.consumer.activemq.datastore.settings.ActiveMQDatastoreSettingsKey;
 import org.eclipse.kapua.converter.kura.KuraPayloadProtoConverter;
@@ -57,12 +57,13 @@ public class Consumer extends AbstractApplication {
 
     private ClientOptions connectorOptions;
     private ClientOptions errorOptions;
-    private AmqpActiveMQConnector connector;
+    private AmqpTransportActiveMQConnector connector;
     private KuraPayloadProtoConverter converter;
     private DatastoreProcessor processor;
     private ErrorProcessor errorProcessor;
 
     protected Consumer() {
+        super(HEALTH_PATH);
         SystemSetting configSys = SystemSetting.getInstance();
         logger.info("Checking database... '{}'", configSys.getBoolean(SystemSettingKey.DB_SCHEMA_UPDATE));
         if(configSys.getBoolean(SystemSettingKey.DB_SCHEMA_UPDATE, false)) {
@@ -114,7 +115,7 @@ public class Consumer extends AbstractApplication {
         logger.info("Instantiating Datastore Consumer... initializing ErrorProcessor");
         errorProcessor = new ErrorProcessor(applicationContext.getVertx(), errorOptions);
         logger.info("Instantiating Datastore Consumer... instantiating AmqpActiveMQConnector");
-        connector = new AmqpActiveMQConnector(applicationContext.getVertx(), connectorOptions, converter, processor, errorProcessor);
+        connector = new AmqpTransportActiveMQConnector(applicationContext.getVertx(), connectorOptions, converter, processor, errorProcessor);
         logger.info("Instantiating Datastore Consumer... DONE");
         applicationContext.getVertx().deployVerticle(connector, ar -> {
             if (ar.succeeded()) {
@@ -124,24 +125,24 @@ public class Consumer extends AbstractApplication {
                 startFuture.completeExceptionally(ar.cause());
             }
         });
-        applicationContext.registerHealthCheck(HEALTH_PATH, HEALTH_NAME_CONNECTOR, hcm -> {
-            if (Status.OK().equals(connector.getStatus())) {
+        applicationContext.registerHealthCheck(HEALTH_NAME_CONNECTOR, hcm -> {
+            if (connector.getStatus().isOk()) {
                 hcm.complete(Status.OK());
             }
             else {
                 hcm.complete(Status.KO());
             }
         });
-        applicationContext.registerHealthCheck(HEALTH_PATH, HEALTH_NAME_DATASTORE, hcm -> {
-            if (Status.OK().equals(processor.getStatus())) {
+        applicationContext.registerHealthCheck(HEALTH_NAME_DATASTORE, hcm -> {
+            if (processor.getStatus().isOk()) {
                 hcm.complete(Status.OK());
             }
             else {
                 hcm.complete(Status.KO());
             }
         });
-        applicationContext.registerHealthCheck(HEALTH_PATH, HEALTH_NAME_ERROR, hcm -> {
-            if (Status.OK().equals(errorProcessor.getStatus())) {
+        applicationContext.registerHealthCheck(HEALTH_NAME_ERROR, hcm -> {
+            if (errorProcessor.getStatus().isOk()) {
                 hcm.complete(Status.OK());
             }
             else {

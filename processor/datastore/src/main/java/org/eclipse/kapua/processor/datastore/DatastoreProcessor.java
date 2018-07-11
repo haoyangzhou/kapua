@@ -101,7 +101,6 @@ public class DatastoreProcessor implements Processor<TransportMessage>, HealthCh
                 fut.fail(e);
             }
         }, ar -> {
-            System.out.println("=================================================");
             if (ar.succeeded()) {
                 result.handle(Future.succeededFuture());
             }

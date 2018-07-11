@@ -20,6 +20,7 @@ public interface ApplicationContext {
 
     Vertx getVertx();
 
-    void registerHealthCheck(String path, String name, Handler<Future<Status>> procedure);
+    void registerHealthCheck(String name, Handler<Future<Status>> procedure);
 
+    String getPath();
 }

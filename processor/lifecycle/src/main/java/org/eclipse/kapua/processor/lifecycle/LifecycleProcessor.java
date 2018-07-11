@@ -39,8 +39,7 @@ public class LifecycleProcessor implements Processor<TransportMessage>, HealthCh
         APPS,
         BIRTH,
         DC,
-        MISSING,
-        NOTIFY
+        MISSING
     }
 
     public LifecycleProcessor() {
@@ -76,9 +75,6 @@ public class LifecycleProcessor implements Processor<TransportMessage>, HealthCh
                 break;
             case MISSING:
                 lifecycleListener.processMissingMessage(message);
-                break;
-            case NOTIFY:
-                lifecycleListener.processNotifyMessage(message);
                 break;
             default:
                 result.handle(Future.succeededFuture());

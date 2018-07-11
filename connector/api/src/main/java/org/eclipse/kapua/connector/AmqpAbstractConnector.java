@@ -30,8 +30,11 @@ import io.vertx.core.Vertx;
 
 /**
  * Abstract AMQP connector
+ *
+ * @param <M> Converter message type (optional)
+ * @param <P> Processor message type
  */
-public abstract class AmqpAbstractConnector<P> extends AbstractConnector<byte[], P> {
+public abstract class AmqpAbstractConnector<M, P> extends AbstractConnector<M, P> {
 
     protected final static Logger logger = LoggerFactory.getLogger(AmqpAbstractConnector.class);
 
@@ -42,7 +45,7 @@ public abstract class AmqpAbstractConnector<P> extends AbstractConnector<byte[],
      * @param processor processor instance
      * @param errorProcessor error processor instance
      */
-    protected AmqpAbstractConnector(Vertx vertx, Converter<byte[], P> converter, Processor<P> processor, @SuppressWarnings("rawtypes") Processor errorProcessor) {
+    protected AmqpAbstractConnector(Vertx vertx, Converter<M, P> converter, Processor<P> processor, @SuppressWarnings("rawtypes") Processor errorProcessor) {
         super(vertx, converter, processor, errorProcessor);
     }
 
@@ -67,23 +70,9 @@ public abstract class AmqpAbstractConnector<P> extends AbstractConnector<byte[],
      */
     protected abstract void disconnect(final Future<Void> disconnectFuture);
 
-    @Override
-    protected MessageContext<byte[]> convert(MessageContext<?> message) throws KapuaConverterException {
-        //this cast is safe since this implementation is using the AMQP connector
-        Message msg = (Message)message.getMessage();
-        return new MessageContext<byte[]>(
-                extractBytePayload(msg.getBody()),
-                getMessageParameters(msg));
-
-        // By default, the receiver automatically accepts (and settles) the delivery
-        // when the handler returns, if no other disposition has been applied.
-        // To change this and always manage dispositions yourself, use the
-        // setAutoAccept method on the receiver.
-    }
-
     protected abstract Map<String, Object> getMessageParameters(Message message) throws KapuaConverterException;
 
-    private byte[] extractBytePayload(Section body) throws KapuaConverterException {
+    protected byte[] extractBytePayload(Section body) throws KapuaConverterException {
         logger.info("Received message with body: {}", body);
         if (body instanceof Data) {
             Binary data = ((Data) body).getValue();
