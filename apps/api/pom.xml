@@ -20,7 +20,7 @@
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>apps-api</artifactId>
+    <artifactId>kapua-apps-api</artifactId>
 
     <dependencies>
         <!-- External dependencies -->

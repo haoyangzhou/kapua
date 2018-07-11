@@ -45,7 +45,9 @@ import io.vertx.proton.ProtonQoS;
 public class Consumer extends AbstractApplication {
 
     protected final static Logger logger = LoggerFactory.getLogger(Consumer.class);
-    private final static String HEALTH_NAME = "Consumer-Datastore-ActiveMQ";
+    private final static String HEALTH_NAME_CONNECTOR = "ActiveMQ-connector";
+    private final static String HEALTH_NAME_DATASTORE = "Datastore-processor";
+    private final static String HEALTH_NAME_ERROR = "Error-processor";
     private final static String HEALTH_PATH = "/health/consumer/activemq/datastore";
 
     public static void main(String args[]) throws Exception {
@@ -122,8 +124,24 @@ public class Consumer extends AbstractApplication {
                 startFuture.completeExceptionally(ar.cause());
             }
         });
-        applicationContext.registerHealthCheck(HEALTH_PATH, HEALTH_NAME, hcm -> {
-            if (connector.isConnected()) {
+        applicationContext.registerHealthCheck(HEALTH_PATH, HEALTH_NAME_CONNECTOR, hcm -> {
+            if (Status.OK().equals(connector.getStatus())) {
+                hcm.complete(Status.OK());
+            }
+            else {
+                hcm.complete(Status.KO());
+            }
+        });
+        applicationContext.registerHealthCheck(HEALTH_PATH, HEALTH_NAME_DATASTORE, hcm -> {
+            if (Status.OK().equals(processor.getStatus())) {
+                hcm.complete(Status.OK());
+            }
+            else {
+                hcm.complete(Status.KO());
+            }
+        });
+        applicationContext.registerHealthCheck(HEALTH_PATH, HEALTH_NAME_ERROR, hcm -> {
+            if (Status.OK().equals(errorProcessor.getStatus())) {
                 hcm.complete(Status.OK());
             }
             else {

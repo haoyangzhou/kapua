@@ -13,6 +13,7 @@ package org.eclipse.kapua.processor.lifecycle;
 
 import java.util.List;
 
+import org.eclipse.kapua.apps.api.HealthCheckable;
 import org.eclipse.kapua.connector.MessageContext;
 import org.eclipse.kapua.message.transport.TransportMessage;
 import org.eclipse.kapua.processor.KapuaProcessorException;
@@ -23,8 +24,9 @@ import org.slf4j.LoggerFactory;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.ext.healthchecks.Status;
 
-public class LifecycleProcessor implements Processor<TransportMessage> {
+public class LifecycleProcessor implements Processor<TransportMessage>, HealthCheckable {
 
     private static final Logger logger = LoggerFactory.getLogger(LifecycleProcessor.class);
 
@@ -86,6 +88,16 @@ public class LifecycleProcessor implements Processor<TransportMessage> {
         else {
             result.handle(Future.failedFuture(INVALID_TOPIC));
         }
+    }
+
+    @Override
+    public Status getStatus() {
+        return Status.OK();
+    }
+
+    @Override
+    public boolean isHealty() {
+        return true;
     }
 
 }

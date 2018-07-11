@@ -13,6 +13,7 @@ package org.eclipse.kapua.processor.logger;
 
 import java.io.StringWriter;
 
+import org.eclipse.kapua.apps.api.HealthCheckable;
 import org.eclipse.kapua.commons.util.xml.XmlUtil;
 import org.eclipse.kapua.connector.MessageContext;
 import org.eclipse.kapua.message.transport.TransportMessage;
@@ -24,8 +25,9 @@ import org.slf4j.LoggerFactory;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.ext.healthchecks.Status;
 
-public class LoggerProcessor implements Processor<TransportMessage> {
+public class LoggerProcessor implements Processor<TransportMessage>, HealthCheckable {
 
     private static final Logger logger = LoggerFactory.getLogger(LoggerProcessor.class);
 
@@ -57,4 +59,13 @@ public class LoggerProcessor implements Processor<TransportMessage> {
         stopFuture.complete();
     }
 
+    @Override
+    public Status getStatus() {
+        return Status.OK();
+    }
+
+    @Override
+    public boolean isHealty() {
+        return true;
+    }
 }

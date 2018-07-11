@@ -25,8 +25,9 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import io.vertx.ext.healthchecks.Status;
 
-public class ErrorProcessor implements Processor<Message> {
+public class ErrorProcessor implements Processor<Message>, HealthCheckable {
 
     private static final Logger logger = LoggerFactory.getLogger(ErrorProcessor.class);
 
@@ -53,4 +54,18 @@ public class ErrorProcessor implements Processor<Message> {
         stopFuture.complete();
     }
 
+    @Override
+    public Status getStatus() {
+        if (sender.isConnected()) {
+            return Status.OK();
+        }
+        else {
+            return Status.KO();
+        }
+    }
+
+    @Override
+    public boolean isHealty() {
+        return sender.isConnected();
+    }
 }

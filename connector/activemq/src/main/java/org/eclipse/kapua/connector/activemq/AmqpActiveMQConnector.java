@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.qpid.proton.message.Message;
+import org.eclipse.kapua.apps.api.HealthCheckable;
 import org.eclipse.kapua.broker.client.amqp.AmqpConsumer;
 import org.eclipse.kapua.broker.client.amqp.ClientOptions;
 import org.eclipse.kapua.commons.setting.system.SystemSetting;
@@ -34,13 +35,14 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import io.vertx.ext.healthchecks.Status;
 import io.vertx.proton.ProtonHelper;
 
 /**
  * AMQP ActiveMQ connector implementation
  *
  */
-public class AmqpActiveMQConnector extends AmqpAbstractConnector<TransportMessage> {
+public class AmqpActiveMQConnector extends AmqpAbstractConnector<TransportMessage> implements HealthCheckable {
 
     protected final static Logger logger = LoggerFactory.getLogger(AmqpActiveMQConnector.class);
 
@@ -48,6 +50,10 @@ public class AmqpActiveMQConnector extends AmqpAbstractConnector<TransportMessag
     private final static String CLASSIFIER = SystemSetting.getInstance().getMessageClassifier();
 
     private AmqpConsumer consumer;
+
+    public AmqpActiveMQConnector(Vertx vertx, ClientOptions clientOptions, Processor<TransportMessage> processor) {
+        this(vertx, clientOptions, null, processor, null);
+    }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public AmqpActiveMQConnector(Vertx vertx, ClientOptions clientOptions, Converter<byte[], TransportMessage> converter, Processor<TransportMessage> processor, Processor<?> errorProcessor) {
@@ -146,4 +152,18 @@ public class AmqpActiveMQConnector extends AmqpAbstractConnector<TransportMessag
         return parameters;
     }
 
+    @Override
+    public Status getStatus() {
+        if (consumer.isConnected()) {
+            return Status.OK();
+        }
+        else {
+            return Status.KO();
+        }
+    }
+
+    @Override
+    public boolean isHealty() {
+        return consumer.isConnected();
+    }
 }

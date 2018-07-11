@@ -14,6 +14,7 @@ package org.eclipse.kapua.processor.datastore;
 import java.util.UUID;
 
 import org.eclipse.kapua.KapuaException;
+import org.eclipse.kapua.apps.api.HealthCheckable;
 import org.eclipse.kapua.commons.security.KapuaSecurityUtils;
 import org.eclipse.kapua.connector.MessageContext;
 import org.eclipse.kapua.locator.KapuaLocator;
@@ -35,8 +36,9 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import io.vertx.ext.healthchecks.Status;
 
-public class DatastoreProcessor implements Processor<TransportMessage> {
+public class DatastoreProcessor implements Processor<TransportMessage>, HealthCheckable {
 
     private static final Logger logger = LoggerFactory.getLogger(DatastoreProcessor.class);
 
@@ -99,6 +101,7 @@ public class DatastoreProcessor implements Processor<TransportMessage> {
                 fut.fail(e);
             }
         }, ar -> {
+            System.out.println("=================================================");
             if (ar.succeeded()) {
                 result.handle(Future.succeededFuture());
             }
@@ -112,6 +115,18 @@ public class DatastoreProcessor implements Processor<TransportMessage> {
     public void stop(Future<Void> stopFuture) {
         // nothing to do
         stopFuture.complete();
+    }
+
+    @Override
+    public Status getStatus() {
+        //TODO check datastore status
+        return Status.OK();
+    }
+
+    @Override
+    public boolean isHealty() {
+        //TODO check datastore status
+        return true;
     }
 
 }

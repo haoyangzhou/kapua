@@ -9,21 +9,14 @@
  * Contributors:
  *     Eurotech - initial API and implementation
  *******************************************************************************/
-package org.eclipse.kapua.processor;
+package org.eclipse.kapua.apps.api;
 
-import org.eclipse.kapua.KapuaException;
-import org.eclipse.kapua.connector.MessageContext;
+import io.vertx.ext.healthchecks.Status;
 
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
+public interface HealthCheckable {
 
-public interface Processor<T> {
+    public Status getStatus();
 
-    public void start(Future<Void> future);
-
-    public void process(MessageContext<T> message, Handler<AsyncResult<Void>> result) throws KapuaException;
-
-    public void stop(Future<Void> future);
+    public boolean isHealty();
 
 }
