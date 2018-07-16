@@ -61,6 +61,10 @@ public enum ActiveMQErrorSettingsKey implements SettingKey {
      */
     MAX_RECONNECTION_ATTEMPTS("activemq_error.maximum_reconnection_attempt"),
     /**
+     * Message prefetch
+     */
+    PREFETCH_MESSAGES("activemq_error.prefetch_messages"),
+    /**
      * Exiting code when maximum reconnection attempt is reached
      */
     EXIT_CODE("activemq_error.exit_code");

@@ -29,6 +29,7 @@ public class ClientOptions {
         IDLE_TIMEOUT,
         AUTO_ACCEPT,
         QOS,
+        PREFETCH_MESSAGES,
         EXIT_CODE
     }
 
@@ -61,6 +62,11 @@ public class ClientOptions {
 
     public Integer getInt(AmqpClientOptions key, Integer defaultValue) {
         Integer tmp = (Integer)options.get(key.name());
+        return (tmp!=null ? tmp : defaultValue);
+    }
+
+    public Long getLong(AmqpClientOptions key, Long defaultValue) {
+        Long tmp = (Long)options.get(key.name());
         return (tmp!=null ? tmp : defaultValue);
     }
 

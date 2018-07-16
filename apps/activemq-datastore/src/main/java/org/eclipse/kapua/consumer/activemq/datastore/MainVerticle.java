@@ -82,6 +82,7 @@ public class MainVerticle extends AbstractMainVerticle {
         connectorOptions.put(AmqpClientOptions.CONNECT_TIMEOUT, ActiveMQDatastoreSettings.getInstance().getInt(ActiveMQDatastoreSettingsKey.CONNECT_TIMEOUT));
         connectorOptions.put(AmqpClientOptions.MAXIMUM_RECONNECTION_ATTEMPTS, ActiveMQDatastoreSettings.getInstance().getInt(ActiveMQDatastoreSettingsKey.MAX_RECONNECTION_ATTEMPTS));
         connectorOptions.put(AmqpClientOptions.IDLE_TIMEOUT, ActiveMQDatastoreSettings.getInstance().getInt(ActiveMQDatastoreSettingsKey.IDLE_TIMEOUT));
+        connectorOptions.put(AmqpClientOptions.PREFETCH_MESSAGES, ActiveMQDatastoreSettings.getInstance().getInt(ActiveMQDatastoreSettingsKey.PREFETCH_MESSAGES));
         errorOptions = new ClientOptions();
         errorOptions = new ClientOptions(
                 ActiveMQDatastoreSettings.getInstance().getString(ActiveMQDatastoreSettingsKey.CONNECTION_HOST),
