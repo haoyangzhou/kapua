@@ -11,19 +11,33 @@
  *******************************************************************************/
 package org.eclipse.kapua.commons.core.vertx;
 
-import javax.inject.Inject;
-import javax.inject.Named;
+public class HttpRestServerConfig {
 
-public class EBServerImpl extends AbstractEBServer {
+    private String metricsRoot;
+    private String host;
+    private int port;
 
-    @Inject
-    @Named("event-bus-server.default-address")
-    private String defaultAddress;
+    public String getMetricsRoot() {
+        return metricsRoot;
+    }
 
-    @Override
-    public EBServerConfig getConfigs() {
-        EBServerConfig configs = new EBServerConfig();
-        configs.setDefaultAddress(defaultAddress);
-        return configs;
+    public void setMetricsRoot(String metricsRoot) {
+        this.metricsRoot = metricsRoot;
+    }
+
+    public String getHost() {
+        return host;
+    }
+
+    public void setHost(String host) {
+        this.host = host;
+    }
+
+    public int getPort() {
+        return port;
+    }
+
+    public void setPort(int port) {
+        this.port = port;
     }
 }

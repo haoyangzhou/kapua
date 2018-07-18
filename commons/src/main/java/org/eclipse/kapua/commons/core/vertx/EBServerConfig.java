@@ -11,19 +11,16 @@
  *******************************************************************************/
 package org.eclipse.kapua.commons.core.vertx;
 
-import javax.inject.Inject;
-import javax.inject.Named;
+public class EBServerConfig {
 
-public class EBServerImpl extends AbstractEBServer {
-
-    @Inject
-    @Named("event-bus-server.default-address")
     private String defaultAddress;
 
-    @Override
-    public EBServerConfig getConfigs() {
-        EBServerConfig configs = new EBServerConfig();
-        configs.setDefaultAddress(defaultAddress);
-        return configs;
+    public String getDefaultAddress() {
+        return defaultAddress;
     }
+
+    public void setDefaultAddress(String defaultAddress) {
+        this.defaultAddress = defaultAddress;
+    }
+
 }
