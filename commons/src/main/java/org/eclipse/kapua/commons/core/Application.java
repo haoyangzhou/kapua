@@ -11,7 +11,9 @@
  *******************************************************************************/
 package org.eclipse.kapua.commons.core;
 
-
+/*
+ * Marker interface to be implemented by Microservice Applications.
+ */
 public interface Application {
 
     public String getName();

@@ -11,23 +11,11 @@
  *******************************************************************************/
 package org.eclipse.kapua.commons.core;
 
-import com.google.inject.Injector;
+/**
+ * A object context acts as a factory and provides object instances 
+ * from classes as defined in {@link ObjectContextConfig}.
+ */
+public interface ObjectContext {
 
-public class BeanContextImpl implements BeanContext {
-
-    private Injector injector;
-
-    public Injector getInjector() {
-        return injector;
-    }
-
-    public void setInjector(Injector injector) {
-        this.injector = injector;
-    }
-
-    @Override
-    public <T> T getInstance(Class<T> clazz) {
-        return injector.getInstance(clazz);
-    }
-
+    public <T> T getInstance(Class<T> clazz);
 }

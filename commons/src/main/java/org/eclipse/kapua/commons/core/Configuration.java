@@ -13,6 +13,14 @@ package org.eclipse.kapua.commons.core;
 
 import java.util.List;
 
+/**
+ * Configuration holds a set of key-value pairs collected from configuration 
+ * sources {@link ConfigurationSource} (e.g. configuration files) provided 
+ * by the application.
+ * <p>
+ * Keys use a dotted notation (e.g. "comp.feature.property").
+ * Configuration is by default a managed bean.
+ */
 public interface Configuration {
 
     public List<String> getKeys();

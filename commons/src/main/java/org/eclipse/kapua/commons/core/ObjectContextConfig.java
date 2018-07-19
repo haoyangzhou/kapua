@@ -11,7 +11,19 @@
  *******************************************************************************/
 package org.eclipse.kapua.commons.core;
 
-public interface BeanContext {
+import com.google.inject.AbstractModule;
 
-    public <T> T getInstance(Class<T> clazz);
+/**
+ * Provides bindings used by {@link ObjectContext} to create beans.
+ * <p>
+ * Application implementations may extend this class to provide the 
+ * actual bindings that.
+ * 
+ */
+public class ObjectContextConfig extends AbstractModule {
+
+    @Override
+    protected void configure() {
+    }
+
 }

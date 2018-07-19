@@ -20,7 +20,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.kapua.commons.core.Application;
-import org.eclipse.kapua.commons.core.BeanContextImpl;
+import org.eclipse.kapua.commons.core.ObjectContextImpl;
 import org.eclipse.kapua.commons.core.Configuration;
 import org.eclipse.kapua.commons.core.ConfigurationImpl;
 import org.eclipse.kapua.commons.core.ConfigurationSourceFactoryImpl;
@@ -40,6 +40,13 @@ import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.dropwizard.DropwizardMetricsOptions;
 
+/*
+ * Base class to implement a Vertx application.
+ * <p>
+ * It uses the main Verticle provided by implementation classes to actually start 
+ * the application. It also requires a {@link BeanContextConfiguration} that is 
+ * used to create objects and creates the configuration sources.
+ */
 public abstract class VertxApplication<M extends AbstractMainVerticle> implements Application {
 
     static {
@@ -62,6 +69,13 @@ public abstract class VertxApplication<M extends AbstractMainVerticle> implement
 
     private Vertx vertx;
 
+    /**
+     * Returns the name of the application which is the used later on (e.g. to retrieve 
+     * the configuration file). Usually overridden by implementation classes; if not it
+     * returns a default application name {@link DEFAULT_APP_NAME}.
+     * 
+     * @return the name of the application
+     */
     @Override
     public String getName() {
         return DEFAULT_APP_NAME;
@@ -69,6 +83,16 @@ public abstract class VertxApplication<M extends AbstractMainVerticle> implement
 
     public abstract Class<M> getMainVerticle();
 
+    /**
+     * This method is called by the implementation classes to start the application.
+     * <p>
+     * It invokes the method {@link #initialize(EnvironmentSetup)} to execute actions that need to
+     * be performed before deploying the main verticle (e.g. provide the {@link BeanContextConfiguration).
+     * After that it invokes the method {@link #run(Environment, Configuration)} to start the actual
+     * execution.
+     * 
+     * @param args command line parameters
+     */
     public void run(String[] args) {    
         EnvironmentImpl env = null;
         ConfigurationImpl config = null;
@@ -118,7 +142,7 @@ public abstract class VertxApplication<M extends AbstractMainVerticle> implement
 
             Injector injector = Guice.createInjector(modules);
 
-            BeanContextImpl contextImpl = new BeanContextImpl();
+            ObjectContextImpl contextImpl = new ObjectContextImpl();
             contextImpl.setInjector(injector);
             env.setBeanContext(contextImpl);
             env.setMetricRegistry(metricRegistry);
@@ -131,8 +155,13 @@ public abstract class VertxApplication<M extends AbstractMainVerticle> implement
     }
 
     /**
-     * Initialize the application.<p>
-     * This is called by the {@link #run(String[]) run} method. Don't call it yourself.<p>
+     * Initialize the application.
+     * <p>
+     * This is called by the {@link #run(String[]) run} method. Don't call it yourself.
+     * Implementation classes may override this function to provide implementation specific
+     * informations. For example this function has to be used to provide the {@link 
+     * BeanContextConfiguration}.
+     * <p>
      * @param EnvironmentSetup environment for initialization.
      * @throws Exception
      */
@@ -141,8 +170,16 @@ public abstract class VertxApplication<M extends AbstractMainVerticle> implement
     }
 
     /**
-     * Initialize the application.<p>
-     * This is called by the {@link #run(String[]) run} method. Don't call it yourself.<p>
+     * Run the application.
+     * <p>
+     * This is called by the {@link #run(String[]) run} method. Don't call it yourself.
+     * <p>
+     * An implementation class usually don't need to override this method since the
+     * work should be done by the Main Verticle start method.
+     * <p> 
+     * If the start of the main verticle take more time than established by a startup
+     * timeout the start is aborted and the application closes.
+     * <p>
      * @param EnvironmentSetup environment for initialization.
      * @param Environment application environment.
      * @param Configuration application configuration.
@@ -153,9 +190,13 @@ public abstract class VertxApplication<M extends AbstractMainVerticle> implement
     }
 
     /**
-     * Shutdown the application.<p>
+     * Shutdown the application.
+     * <p>
      * May be called by the {@link #run(String[]) run} method, e.g. if the application cant'
-     * startup within the established timeout.<p>
+     * startup within the established timeout. May be called externally as well. If the shutdown
+     * doesn't complete within a shutdown timeout, the operation is aborted and the application
+     * is exited.
+     * <p>
      * @param Environment application environment.
      * @param Configuration application configuration.     
      */

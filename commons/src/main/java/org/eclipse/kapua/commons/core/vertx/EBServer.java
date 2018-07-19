@@ -13,6 +13,12 @@ package org.eclipse.kapua.commons.core.vertx;
 
 import io.vertx.core.Verticle;
 
+/**
+ * Defines the interface for a verticle exposing a Vertx EventBus endpoint.
+ * <p>
+ * It can register handlers that will be invoked when a matching {@link EBRequest} is
+ * received.
+ */
 public interface EBServer extends Verticle {
 
     public void registerHandlerProvider(EBRequestHandlerProvider provider);
