@@ -23,6 +23,13 @@ import io.vertx.ext.dropwizard.MetricsService;
 import io.vertx.ext.healthchecks.HealthCheckHandler;
 import io.vertx.ext.web.Router;
 
+/**
+ * Base class to implement an {@link HttpRestServer} verticle
+ * <p>
+ * It exposes two predefined http endpoints, one to execute health 
+ * checks and one to retrieve metrics.
+ *
+ */
 public class AbstractHttpRestServer extends AbstractVerticle implements HttpRestServer {
 
     private static Logger logger = LoggerFactory.getLogger(AbstractHttpRestServer.class);

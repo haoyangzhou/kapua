@@ -11,6 +11,10 @@
  *******************************************************************************/
 package org.eclipse.kapua.commons.core.vertx;
 
+/**
+ * Holds the configuration parameters of an {@link AbstractHttpRestServer}
+ *
+ */
 public class HttpRestServerConfig {
 
     private String metricsRoot;

@@ -16,7 +16,7 @@ import org.eclipse.kapua.commons.core.ObjectContext;
 import com.codahale.metrics.MetricRegistry;
 
 /**
- * Environment give access to shared base services provided by
+ * Environment give access to shared services provided by
  * the application.
  * <p>
  * Environment is by default a managed bean.

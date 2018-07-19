@@ -19,6 +19,10 @@ import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 
+/**
+ * Base class to implement an {@link EBServer} verticle.
+ *
+ */
 public class AbstractEBServer extends AbstractVerticle implements EBServer {
 
     private static Logger logger = LoggerFactory.getLogger(AbstractEBServer.class);
@@ -46,7 +50,7 @@ public class AbstractEBServer extends AbstractVerticle implements EBServer {
         super.start();
 
         eventBus = vertx.eventBus();
-        messageDispatcher = EBRequestDispatcher.dispatcher(eventBus, getConfigs().getDefaultAddress());
+        messageDispatcher = EBRequestDispatcher.dispatcher(eventBus, getConfigs().getAddress());
         for(EBRequestHandlerProvider provider:handlerProviders) {
             provider.registerHandlers(messageDispatcher);
         }

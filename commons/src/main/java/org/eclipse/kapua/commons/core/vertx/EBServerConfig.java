@@ -11,16 +11,20 @@
  *******************************************************************************/
 package org.eclipse.kapua.commons.core.vertx;
 
+/**
+ * Holds the configuration parameters of an {@link AbstractEBServer}
+ *
+ */
 public class EBServerConfig {
 
-    private String defaultAddress;
+    private String address;
 
-    public String getDefaultAddress() {
-        return defaultAddress;
+    public String getAddress() {
+        return address;
     }
 
-    public void setDefaultAddress(String defaultAddress) {
-        this.defaultAddress = defaultAddress;
+    public void setAddress(String address) {
+        this.address = address;
     }
 
 }

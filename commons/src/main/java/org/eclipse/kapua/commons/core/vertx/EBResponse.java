@@ -14,7 +14,7 @@ package org.eclipse.kapua.commons.core.vertx;
 import io.vertx.core.json.JsonObject;
 
 /**
- * An event bus response used to answer to a matching event bus request
+ * An event bus response used to answer a matching event bus request
  * within an event bus request/response interaction.
  *
  */

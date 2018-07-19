@@ -12,7 +12,7 @@
 package org.eclipse.kapua.commons.core;
 
 /*
- * Marker interface to be implemented by Microservice Applications.
+ * Interface to be implemented by Kapua Applications.
  */
 public interface Application {
 

@@ -23,7 +23,7 @@ public class EBServerImpl extends AbstractEBServer {
     @Override
     public EBServerConfig getConfigs() {
         EBServerConfig configs = new EBServerConfig();
-        configs.setDefaultAddress(defaultAddress);
+        configs.setAddress(defaultAddress);
         return configs;
     }
 }

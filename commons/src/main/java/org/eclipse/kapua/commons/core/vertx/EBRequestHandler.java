@@ -16,8 +16,8 @@ import io.vertx.core.Handler;
 import io.vertx.core.json.JsonObject;
 
 /**
- * Accepts a request as a JSON object and asynchronously returns a JSON object 
- * for the response executing an event bus request/response interaction.
+ * Executes an event bus request/response interaction. Accepts a request 
+ * as a JSON object and asynchronously returns a JSON object with the response.
  * <p>
  * Implementation classes have to check that JSON objects are valid.
  *
