@@ -152,7 +152,11 @@ public abstract class VertxApplication<M extends AbstractMainVerticle> implement
             run(env, config);
         } catch (Exception e) {
             logger.error("Error occured while running application {}", e.getMessage(), e);
-            shutdown(env, config);
+            long shutdownTimeout = getDefaultShutdownTimeout();
+            if (config != null) {
+                shutdownTimeout = Long.parseLong(config.getProperty(PROP_VERTX_SHUTDOWN_TIMEOUT));
+            }
+            shutdown(shutdownTimeout);
         }
     }
 
@@ -169,7 +173,6 @@ public abstract class VertxApplication<M extends AbstractMainVerticle> implement
      * @throws Exception
      */
     public void initialize(EnvironmentSetup setup) throws Exception {
-
     }
 
     /**
@@ -181,9 +184,8 @@ public abstract class VertxApplication<M extends AbstractMainVerticle> implement
      * default implementation deploys the main verticle which is supposed to execute
      * the application logic.
      * <p> 
-     * If the start of the main verticle takes more than startup timeout, the 
-     * {link #shutdown(Environment, Configuration)} method is invoked and the 
-     * execution is terminated.
+     * If the start of the main verticle take more time than established by a startup
+     * timeout the start is aborted and the application closes.
      * <p>
      * @param EnvironmentSetup environment for initialization.
      * @param Environment application environment.
@@ -205,7 +207,7 @@ public abstract class VertxApplication<M extends AbstractMainVerticle> implement
      * @param Environment application environment.
      * @param Configuration application configuration.     
      */
-    public void shutdown(Environment environment, Configuration config) {
+    public void shutdown(long timeout) {
         if (vertx != null) {
             Future<Void> closeFuture = Future.future();
             CountDownLatch stoppedSignal = new CountDownLatch(1);
@@ -221,8 +223,7 @@ public abstract class VertxApplication<M extends AbstractMainVerticle> implement
             });
 
             try {
-                long shutdownTimeout = Long.parseLong(config.getProperty(PROP_VERTX_SHUTDOWN_TIMEOUT));
-                boolean touchedZero = stoppedSignal.await(shutdownTimeout, TimeUnit.MILLISECONDS);
+                boolean touchedZero = stoppedSignal.await(timeout, TimeUnit.MILLISECONDS);
                 if (closeFuture.failed() || !touchedZero) {
                     throw new Exception("Closing Vertx...FAILED", closeFuture.cause());
                 }
@@ -231,6 +232,17 @@ public abstract class VertxApplication<M extends AbstractMainVerticle> implement
                 System.exit(1);
             }
         }
+    }
+
+    /**
+     * 
+     */
+    public void shutdown() {
+        this.shutdown(getDefaultShutdownTimeout());
+    }
+
+    private long getDefaultShutdownTimeout() {
+        return 5000;
     }
 
     private void deployMainVerticle(Environment env, Configuration config, Class<M> clazz) throws Exception {
