@@ -45,9 +45,19 @@ public class AmqpConsumer extends AbstractAmqpClient {
                 ProtonReceiver receiver = connection.createReceiver(destination);
                 receiver.setAutoAccept((boolean)clientOptions.get(AmqpClientOptions.AUTO_ACCEPT));
                 receiver.setQoS((ProtonQoS)clientOptions.get(AmqpClientOptions.QOS));
-                receiver.handler(messageHandler).open();
+//                receiver.setPrefetch(clientOptions.getInt(AmqpClientOptions.PREFETCH_MESSAGES, 0));
+                receiver.handler(messageHandler).openHandler(ar -> {
+                    if(ar.succeeded()) {
+                        logger.debug("Succeeded establishing consumer link!");
+                        future.complete();
+                    }
+                    else {
+                        logger.warn("Cannot establish link!", ar.cause());
+                        future.fail(ar.cause());
+                    }
+                });
+                receiver.open();
                 logger.info("Register consumer for queue {}... DONE", destination);
-                future.complete();
             }
         }
         catch(Exception e) {
